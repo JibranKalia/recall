@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+PORT=4847
+PIDFILE="$HOME/work/recall/tmp/pids/server.pid"
+
+if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+  echo "Recall server already running (PID $(cat "$PIDFILE")) on http://localhost:$PORT"
+  exit 0
+fi
+
+echo "Starting Recall server on http://localhost:$PORT"
+cd "$HOME/work/recall"
+RAILS_ENV=development bin/rails server -p $PORT -d --pid "$PIDFILE"
+echo "Started (PID $(cat "$PIDFILE"))"

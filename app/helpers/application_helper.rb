@@ -1,27 +1,27 @@
 module ApplicationHelper
-  def message_bg_class(role)
+  def message_css_class(role)
     case role
-    when "user" then "bg-gray-900 border border-gray-800"
-    when "assistant" then "bg-gray-900/50 border border-gray-800/50"
-    when "tool_result" then "bg-gray-950 border border-gray-800/30"
-    when "system" then "bg-gray-900/30 border border-gray-800/30"
-    else "bg-gray-900"
+    when "user" then "message-user"
+    when "assistant" then "message-assistant"
+    when "tool_result" then "message-tool-result"
+    when "system" then "message-system"
+    else "message-user"
     end
   end
 
-  def message_role_class(role)
+  def role_css_class(role)
     case role
-    when "user" then "text-blue-400"
-    when "assistant" then "text-green-400"
-    when "tool_result" then "text-yellow-400"
-    when "system" then "text-gray-500"
-    else "text-gray-400"
+    when "user" then "role-user"
+    when "assistant" then "role-assistant"
+    when "tool_result" then "role-tool-result"
+    when "system" then "role-system"
+    else "role-system"
     end
   end
 
   def render_assistant_content(message)
     blocks = message.parsed_content
-    return content_tag(:div, message.content_text, class: "text-sm text-gray-200 whitespace-pre-wrap break-words") unless blocks.is_a?(Array)
+    return content_tag(:div, message.content_text, class: "message-content") unless blocks.is_a?(Array)
 
     safe_join(blocks.map { |block| render_content_block(block) })
   end
@@ -29,7 +29,7 @@ module ApplicationHelper
   def render_content_block(block)
     case block["type"]
     when "text"
-      content_tag(:div, block["text"], class: "text-sm text-gray-200 whitespace-pre-wrap break-words mb-2")
+      content_tag(:div, block["text"], class: "message-content mb-2")
     when "tool_use"
       render_tool_use(block)
     when "thinking"
@@ -52,11 +52,9 @@ module ApplicationHelper
     else input&.to_json&.truncate(80)
     end
 
-    content_tag(:details, class: "mb-2 text-xs") do
-      content_tag(:summary, class: "cursor-pointer text-yellow-500 hover:text-yellow-400") do
-        "#{name}: #{summary}".html_safe
-      end +
-      content_tag(:pre, JSON.pretty_generate(input), class: "mt-1 p-2 bg-gray-950 rounded text-gray-400 overflow-x-auto text-xs")
+    content_tag(:details) do
+      content_tag(:summary, "#{name}: #{summary}", class: "tool-summary") +
+      content_tag(:pre, JSON.pretty_generate(input), class: "detail-content")
     end
   end
 
@@ -64,9 +62,9 @@ module ApplicationHelper
     text = block["thinking"]
     return "".html_safe if text.blank?
 
-    content_tag(:details, class: "mb-2 text-xs") do
-      content_tag(:summary, "Thinking...", class: "cursor-pointer text-gray-600 hover:text-gray-400") +
-      content_tag(:div, text, class: "mt-1 p-2 bg-gray-950 rounded text-gray-500 whitespace-pre-wrap text-xs")
+    content_tag(:details) do
+      content_tag(:summary, "Thinking...", class: "thinking-summary") +
+      content_tag(:div, text, class: "detail-content")
     end
   end
 end

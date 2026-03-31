@@ -1,10 +1,173 @@
-/*
- * This is a manifest file that'll be compiled into application.css.
- *
- * With Propshaft, assets are served efficiently without preprocessing steps. You can still include
- * application-wide styles in this file, but keep in mind that CSS precedence will follow the standard
- * cascading order, meaning styles declared later in the document or manifest will override earlier ones,
- * depending on specificity.
- *
- * Consider organizing styles into separate files for maintainability.
- */
+:root {
+  --bg-body: #030712;
+  --bg-surface: #111827;
+  --bg-surface-dim: rgba(17, 24, 39, 0.5);
+  --bg-inset: #030712;
+  --border: #1f2937;
+  --border-dim: rgba(31, 41, 55, 0.5);
+  --border-dimmer: rgba(31, 41, 55, 0.3);
+  --text: #f3f4f6;
+  --text-muted: #6b7280;
+  --text-dim: #4b5563;
+  --text-white: #ffffff;
+  --accent-cyan: #06b6d4;
+  --accent-blue: #60a5fa;
+  --accent-green: #4ade80;
+  --accent-yellow: #facc15;
+  --accent-yellow-bright: #eab308;
+  --radius: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg-body);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* Nav */
+.nav {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+.nav-brand { font-size: 1.125rem; font-weight: 700; color: var(--text-white); }
+.nav-link { color: var(--text-muted); font-size: 0.875rem; }
+.nav-link:hover { color: var(--text-white); }
+.nav-stats { margin-left: auto; color: var(--text-dim); font-size: 0.75rem; }
+
+/* Layout */
+.container { max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem; }
+
+/* Typography */
+h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; }
+h2 { font-size: 1.125rem; font-weight: 600; color: var(--text-muted); margin-top: 1.5rem; margin-bottom: 0.75rem; }
+.text-xl { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem; }
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-white { color: var(--text-white); }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pre-wrap { white-space: pre-wrap; word-break: break-word; }
+
+/* Grid */
+.grid-projects {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 0.75rem;
+}
+@media (min-width: 768px) { .grid-projects { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .grid-projects { grid-template-columns: repeat(3, 1fr); } }
+
+/* Cards */
+.card {
+  display: block;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--text-muted); }
+
+/* Session list */
+.session-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.session-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.session-card-body { min-width: 0; flex: 1; }
+.session-card-title { font-size: 0.875rem; color: var(--text-white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-card-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+.session-card-date { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
+
+/* Messages */
+.message-list { display: flex; flex-direction: column; gap: 1rem; }
+.message { border-radius: var(--radius); padding: 1rem; }
+.message-user { background: var(--bg-surface); border: 1px solid var(--border); }
+.message-assistant { background: var(--bg-surface-dim); border: 1px solid var(--border-dim); }
+.message-tool-result { background: var(--bg-inset); border: 1px solid var(--border-dimmer); }
+.message-system { background: rgba(17, 24, 39, 0.3); border: 1px solid var(--border-dimmer); }
+
+.message-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.role-badge { font-size: 0.75rem; font-weight: 600; }
+.role-user { color: var(--accent-blue); }
+.role-assistant { color: var(--accent-green); }
+.role-tool-result { color: var(--accent-yellow); }
+.role-system { color: var(--text-muted); }
+
+.message-content { font-size: 0.875rem; color: #e5e7eb; white-space: pre-wrap; word-break: break-word; }
+.message-timestamp { font-size: 0.75rem; color: var(--text-dim); }
+
+/* Tool use / thinking details */
+details { font-size: 0.75rem; margin-bottom: 0.5rem; }
+details summary { cursor: pointer; }
+details summary.tool-summary { color: var(--accent-yellow-bright); }
+details summary.tool-summary:hover { color: var(--accent-yellow); }
+details summary.thinking-summary { color: var(--text-dim); }
+details summary.thinking-summary:hover { color: var(--text-muted); }
+details .detail-content {
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  background: var(--bg-inset);
+  border-radius: 4px;
+  color: var(--text-muted);
+  overflow-x: auto;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* Search */
+.search-form { margin-bottom: 1.5rem; display: flex; gap: 0.5rem; }
+.search-input {
+  flex: 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  color: var(--text-white);
+  font-size: 0.875rem;
+  outline: none;
+}
+.search-input:focus { border-color: var(--text-muted); }
+.search-btn {
+  background: var(--border);
+  color: var(--text-white);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.search-btn:hover { background: var(--text-dim); }
+.search-result-meta { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+.search-result-source { color: var(--accent-cyan); }
+.search-result-badge { padding: 0.125rem 0.375rem; border-radius: 4px; background: var(--border); }
+.search-result-snippet { font-size: 0.875rem; color: #d1d5db; }
+.search-result-snippet mark { background: var(--accent-yellow); color: #000; border-radius: 2px; padding: 0 2px; }
+
+/* Session detail meta */
+.session-meta { font-size: 0.75rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+/* Pagination */
+.pagination { display: flex; gap: 1rem; margin-top: 1.5rem; font-size: 0.875rem; }
+.pagination a { color: var(--text-muted); }
+.pagination a:hover { color: var(--text-white); }
+
+/* Back link */
+.back-link { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem; display: inline-block; }
+.back-link:hover { color: var(--text-white); }
+
+/* Utility */
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mt-1 { margin-top: 0.25rem; }

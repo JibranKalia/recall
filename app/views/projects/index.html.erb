@@ -1,16 +1,16 @@
-<h1 class="text-2xl font-bold mb-6">Projects</h1>
+<h1>Projects</h1>
 
 <% %w[claude_code codex].each do |source_type| %>
   <% projects = @projects_by_source[source_type] %>
   <% next unless projects&.any? %>
 
-  <h2 class="text-lg font-semibold text-gray-400 mt-6 mb-3"><%= source_type.titleize %></h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+  <h2><%= source_type.titleize %></h2>
+  <div class="grid-projects">
     <% projects.each do |project| %>
-      <%= link_to project_path(project), class: "block bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-600 transition" do %>
-        <div class="font-medium text-white"><%= project.display_name %></div>
-        <div class="text-xs text-gray-500 mt-1 truncate"><%= project.path %></div>
-        <div class="text-xs text-gray-400 mt-2"><%= project.sessions_count %> sessions</div>
+      <%= link_to project_path(project), class: "card" do %>
+        <div class="text-white" style="font-weight:500"><%= project.display_name %></div>
+        <div class="text-xs text-muted mt-1 truncate"><%= project.path %></div>
+        <div class="text-xs text-muted" style="margin-top:0.5rem"><%= project.sessions_count %> sessions</div>
       <% end %>
     <% end %>
   </div>
