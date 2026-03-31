@@ -1,16 +1,35 @@
 <h1>Projects</h1>
 
-<% %w[claude_code codex].each do |source_type| %>
-  <% projects = @projects_by_source[source_type] %>
-  <% next unless projects&.any? %>
+<div data-controller="search" data-search-url-value="<%= projects_path %>">
+  <form action="<%= projects_path %>" method="get">
+    <div class="search-form">
+      <input type="text" name="q" value="<%= @query %>" placeholder="Search across all conversations..."
+             class="search-input" autofocus
+             data-search-target="input"
+             data-action="input->search#search">
+      <button type="submit" class="search-btn">Search</button>
+    </div>
+  </form>
 
-  <h2><%= source_type.titleize %></h2>
+  <div data-search-target="results">
+    <% if @query.present? && @results %>
+      <%= render partial: "projects/search_results" %>
+    <% end %>
+  </div>
+</div>
+
+<% unless @query.present? %>
   <div class="grid-projects">
-    <% projects.each do |project| %>
+    <% @projects.each do |project| %>
       <%= link_to project_path(project), class: "card" do %>
-        <div class="text-white" style="font-weight:500"><%= project.display_name %></div>
-        <div class="text-xs text-muted mt-1 truncate"><%= project.path %></div>
-        <div class="text-xs text-muted" style="margin-top:0.5rem"><%= project.sessions_count %> sessions</div>
+        <div class="project-card-name"><%= project.display_name %></div>
+        <div class="project-card-path"><%= project.path %></div>
+        <div class="project-card-footer">
+          <span class="project-card-sessions"><strong><%= project.sessions_count %></strong> sessions</span>
+          <span class="source-badge source-badge-<%= project.source_type == 'claude_code' ? 'claude' : 'codex' %>">
+            <%= project.source_type.titleize %>
+          </span>
+        </div>
       <% end %>
     <% end %>
   </div>

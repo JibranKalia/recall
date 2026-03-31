@@ -1,6 +1,10 @@
 class ProjectsController < ApplicationController
   def index
-    @projects_by_source = Project.order(:name).group_by(&:source_type)
+    @projects = Project
+      .joins(:sessions)
+      .select("projects.*, MAX(sessions.started_at) AS latest_session_at")
+      .group("projects.id")
+      .order("latest_session_at DESC")
 
     @query = params[:q].to_s.strip
     if @query.present?
@@ -8,6 +12,11 @@ class ProjectsController < ApplicationController
       @sessions_by_id = Session.where(id: @results.map(&:session_id).uniq)
         .includes(:project)
         .index_by(&:id)
+
+      if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
+        render partial: "projects/search_results", layout: false
+        return
+      end
     end
   end
 

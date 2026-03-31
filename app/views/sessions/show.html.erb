@@ -1,13 +1,17 @@
 <%= link_to "&larr; #{@session.project.display_name}".html_safe, project_path(@session.project), class: "back-link" %>
 
-<div class="mb-6">
-  <div class="text-xl"><%= @session.display_title %></div>
+<div class="session-header">
+  <div class="session-title"><%= @session.display_title %></div>
   <div class="session-meta">
-    <span><%= @session.source_name %></span>
-    <span><%= @session.started_at&.strftime("%b %d, %Y %H:%M") %></span>
-    <% if @session.model.present? %><span><%= @session.model %></span><% end %>
-    <span><%= @session.messages_count %> messages</span>
-    <% if @session.total_tokens > 0 %><span><%= number_with_delimiter(@session.total_tokens) %> tokens</span><% end %>
+    <span class="session-meta-tag"><%= @session.source_name %></span>
+    <span class="session-meta-tag"><%= @session.started_at&.strftime("%b %d, %Y &middot; %H:%M").html_safe %></span>
+    <% if @session.model.present? %>
+      <span class="session-meta-tag"><%= @session.model %></span>
+    <% end %>
+    <span class="session-meta-tag"><%= @session.messages_count %> messages</span>
+    <% if @session.total_tokens > 0 %>
+      <span class="session-meta-tag"><%= number_with_delimiter(@session.total_tokens) %> tokens</span>
+    <% end %>
   </div>
 </div>
 

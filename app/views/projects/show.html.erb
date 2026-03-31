@@ -1,24 +1,25 @@
 <%= link_to "&larr; Projects".html_safe, projects_path, class: "back-link" %>
 
-<div class="text-xl"><%= @project.display_name %></div>
-<p class="text-sm text-muted mb-6"><%= @project.path %> &middot; <%= @project.source_type.titleize %></p>
+<div class="project-header">
+  <div class="project-name"><%= @project.display_name %></div>
+  <div class="project-path"><%= @project.path %> &middot; <%= @project.source_type.titleize %></div>
+</div>
 
 <div class="session-list">
   <% @sessions.each do |session| %>
-    <%= link_to session_path(session), class: "card" do %>
-      <div class="session-card-header">
-        <div class="session-card-body">
-          <div class="session-card-title"><%= session.display_title %></div>
-          <div class="session-card-meta">
-            <%= session.messages_count %> messages
-            <% if session.model.present? %>
-              &middot; <%= session.model %>
-            <% end %>
-          </div>
+    <%= link_to session_path(session), class: "session-card" do %>
+      <div class="session-card-body">
+        <div class="session-card-title"><%= session.display_title %></div>
+        <div class="session-card-meta">
+          <span><%= session.messages_count %> messages</span>
+          <% if session.model.present? %>
+            <span class="session-card-meta-divider">&middot;</span>
+            <span><%= session.model %></span>
+          <% end %>
         </div>
-        <div class="session-card-date">
-          <%= session.started_at&.strftime("%b %d, %Y %H:%M") %>
-        </div>
+      </div>
+      <div class="session-card-date">
+        <%= session.started_at&.strftime("%b %d &middot; %H:%M").html_safe %>
       </div>
     <% end %>
   <% end %>
@@ -29,10 +30,10 @@
 <% if total > 30 %>
   <div class="pagination">
     <% if page > 1 %>
-      <%= link_to "Previous", project_path(@project, page: page - 1) %>
+      <%= link_to "&larr; Previous".html_safe, project_path(@project, page: page - 1) %>
     <% end %>
     <% if page * 30 < total %>
-      <%= link_to "Next", project_path(@project, page: page + 1) %>
+      <%= link_to "Next &rarr;".html_safe, project_path(@project, page: page + 1) %>
     <% end %>
   </div>
 <% end %>
