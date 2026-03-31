@@ -1,0 +1,38 @@
+<h1 class="text-2xl font-bold mb-4">Search</h1>
+
+<%= form_tag search_path, method: :get, class: "mb-6" do %>
+  <div class="flex gap-2">
+    <input type="text" name="q" value="<%= @query %>" placeholder="Search conversations..."
+           class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-gray-500"
+           autofocus>
+    <button type="submit" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm">Search</button>
+  </div>
+<% end %>
+
+<% if @query.present? && @results %>
+  <p class="text-sm text-gray-500 mb-4"><%= @results.size %> result(s) for "<%= @query %>"</p>
+
+  <div class="space-y-3">
+    <% @results.each do |message| %>
+      <% session = @sessions_by_id[message.session_id] %>
+      <% next unless session %>
+
+      <%= link_to session_path(session, anchor: "msg-#{message.id}"),
+            class: "block bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-600 transition" do %>
+        <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+          <span class="text-cyan-500"><%= session.source_name %></span>
+          <span><%= session.project&.display_name %></span>
+          <span><%= session.started_at&.strftime("%b %d, %Y") %></span>
+          <span class="px-1.5 py-0.5 rounded bg-gray-800"><%= message.role %></span>
+        </div>
+        <div class="text-sm text-gray-300">
+          <% if message.respond_to?(:snippet) && message.snippet.present? %>
+            <%= sanitize message.snippet, tags: %w[mark] %>
+          <% else %>
+            <%= message.content_text&.truncate(200) %>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>
