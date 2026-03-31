@@ -34,8 +34,9 @@ module Recall
         return nil if message_entries.empty?
 
         first_msg = message_entries.first
-        # Use file basename as external_id — subagents share the parent's sessionId
-        session_id = File.basename(path, ".jsonl")
+        # Use path relative to base_dir as external_id — subagents share parent's sessionId,
+        # and short filenames like agent-ab12c8b can collide across projects
+        session_id = path.delete_prefix(@base_dir + "/")
 
         # Find first user message for title
         first_user = message_entries.find { |e| e["type"] == "user" && e.dig("message", "role") == "user" }

@@ -12,6 +12,7 @@ module Recall
         importer = source[:class].new(**source[:args])
         importer.import_all
       end
+      rebuild_fts
       puts "Done."
     end
 
@@ -21,6 +22,7 @@ module Recall
         importer = source[:class].new(**source[:args])
         importer.reimport_all
       end
+      rebuild_fts
       puts "Done."
     end
 
@@ -33,7 +35,12 @@ module Recall
       puts "Recall: importing #{name}..."
       importer = source[:class].new(**source[:args])
       importer.import_all
+      rebuild_fts
       puts "Done."
+    end
+
+    def self.rebuild_fts
+      ActiveRecord::Base.connection.execute("INSERT INTO messages_fts(messages_fts) VALUES('rebuild')")
     end
   end
 end

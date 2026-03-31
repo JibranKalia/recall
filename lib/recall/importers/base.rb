@@ -78,7 +78,15 @@ module Recall
           session = project.sessions.create!(session_attrs.except(:cwd))
 
           messages = extract_messages(entries)
-          messages.each { |attrs| session.messages.create!(attrs) }
+          messages.each do |attrs|
+            # Strip null bytes and invalid UTF-8 that break SQLite FTS5 triggers
+            if attrs[:content_text]
+              attrs[:content_text] = attrs[:content_text]
+                .encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+                .gsub("\x00", "")
+            end
+            session.messages.create!(attrs)
+          end
 
           session.update_columns(
             started_at: session.messages.minimum(:timestamp),
