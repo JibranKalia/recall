@@ -13,11 +13,13 @@ class ProjectsController < ApplicationController
         .includes(:project)
         .index_by(&:id)
 
-      if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
+      if request.xhr?
         render partial: "projects/search_results", layout: false
         return
       end
     end
+
+    render formats: [:html]
   end
 
   def show

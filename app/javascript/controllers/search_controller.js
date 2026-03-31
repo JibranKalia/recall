@@ -28,7 +28,7 @@ export default class extends Controller {
     url.searchParams.set("q", query)
 
     const response = await fetch(url, {
-      headers: { "Accept": "text/vnd.turbo-stream.html" }
+      headers: { "X-Requested-With": "XMLHttpRequest" }
     })
 
     if (response.ok) {
