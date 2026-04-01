@@ -1,5 +1,5 @@
 /* ── Rouge syntax highlighting (GitHub theme) ── */
-.highlight, .highlight .w { color: #24292f; background-color: var(--bg-inset); }
+.highlight, .highlight .w { color: #24292f; background-color: #f6f8fa; }
 .highlight .k, .highlight .kd, .highlight .kn, .highlight .kp, .highlight .kr, .highlight .kt, .highlight .kv { color: #cf222e; }
 .highlight .gr { color: var(--bg-inset); }
 .highlight .gd { color: #82071e; background-color: #ffebe9; }

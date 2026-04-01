@@ -181,8 +181,8 @@ details.tool-call summary.tool-summary:hover { background: var(--bg-surface-hove
   width: 1.125rem;
   height: 1.125rem;
   border-radius: 3px;
-  background: var(--yellow-dim);
-  color: var(--yellow);
+  background: var(--bg-inset);
+  color: var(--text-muted);
   font-size: 0.5625rem;
   font-weight: 700;
   flex-shrink: 0;
