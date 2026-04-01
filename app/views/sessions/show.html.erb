@@ -26,13 +26,18 @@
 <div class="message-list" data-controller="code-copy">
   <% @messages.each do |message| %>
     <div id="msg-<%= message.id %>" class="message <%= message_css_class(message.role) %>">
-      <div class="message-header">
-        <span class="role-badge <%= role_css_class(message.role) %>"><%= message.role %></span>
-        <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>
-        <% if message.model.present? %>
-          <span class="message-timestamp"><%= message.model %></span>
-        <% end %>
-      </div>
+      <% if message.role == "user" %>
+        <div class="message-header">
+          <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>
+        </div>
+      <% elsif message.role == "assistant" && message.content_text.present? %>
+        <div class="message-header">
+          <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>
+          <% if message.model.present? %>
+            <span class="message-model-tag"><%= message.model %></span>
+          <% end %>
+        </div>
+      <% end %>
 
       <%= render_message_content(message) %>
     </div>
