@@ -60,13 +60,13 @@ module ApplicationHelper
 
   def resume_command(session)
     dir = session.project.path
-    session_id = File.basename(session.external_id, ".jsonl")
+    session_id = session.external_id[/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/, 1]
 
     case session.source_type
     when "claude_code"
-      "cd #{dir} && claude --resume #{session_id}"
+      session_id ? "cd #{dir} && claude --resume #{session_id}" : "cd #{dir}"
     when "codex"
-      "cd #{dir} && codex resume #{session_id}"
+      session_id ? "cd #{dir} && codex resume #{session_id}" : "cd #{dir}"
     else
       "cd #{dir}"
     end
