@@ -1,0 +1,43 @@
+/* ── Rouge syntax highlighting (GitHub theme) ── */
+.highlight, .highlight .w { color: #24292f; background-color: var(--bg-inset); }
+.highlight .k, .highlight .kd, .highlight .kn, .highlight .kp, .highlight .kr, .highlight .kt, .highlight .kv { color: #cf222e; }
+.highlight .gr { color: var(--bg-inset); }
+.highlight .gd { color: #82071e; background-color: #ffebe9; }
+.highlight .nb, .highlight .nc, .highlight .no, .highlight .nn { color: #953800; }
+.highlight .sr, .highlight .na, .highlight .nt { color: #116329; }
+.highlight .gi { color: #116329; background-color: #dafbe1; }
+.highlight .ges { font-weight: bold; font-style: italic; }
+.highlight .kc { color: #0550ae; }
+.highlight .l, .highlight .ld, .highlight .m, .highlight .mb, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .il, .highlight .mo, .highlight .mx { color: #0550ae; }
+.highlight .sb, .highlight .bp, .highlight .ne, .highlight .nl, .highlight .py { color: #0550ae; }
+.highlight .nv, .highlight .vc, .highlight .vg, .highlight .vi, .highlight .vm { color: #0550ae; }
+.highlight .o, .highlight .ow { color: #0550ae; }
+.highlight .gh, .highlight .gu { color: #0550ae; font-weight: bold; }
+.highlight .s, .highlight .sa, .highlight .sc, .highlight .dl, .highlight .sd, .highlight .s2, .highlight .se, .highlight .sh, .highlight .sx, .highlight .s1, .highlight .ss { color: #0a3069; }
+.highlight .nd, .highlight .nf, .highlight .fm { color: #8250df; }
+.highlight .err { color: var(--bg-inset); background-color: #82071e; }
+.highlight .c, .highlight .ch, .highlight .cd, .highlight .cm, .highlight .cp, .highlight .cpf, .highlight .c1, .highlight .cs { color: #6e7781; }
+.highlight .gl, .highlight .gt { color: #6e7781; }
+.highlight .ni, .highlight .si { color: #24292f; }
+.highlight .ge { color: #24292f; font-style: italic; }
+.highlight .gs { color: #24292f; font-weight: bold; }
+
+/* ── Code block copy button ── */
+.code-copy-btn {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text-dim);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+pre:hover .code-copy-btn { opacity: 1; }
+.code-copy-btn:hover { color: var(--text); border-color: var(--border-hover); }
+.code-copy-btn.copied { color: var(--green); border-color: var(--green); opacity: 1; }

@@ -23,7 +23,7 @@
   </button>
 </div>
 
-<div class="message-list">
+<div class="message-list" data-controller="code-copy">
   <% @messages.each do |message| %>
     <div id="msg-<%= message.id %>" class="message <%= message_css_class(message.role) %>">
       <div class="message-header">
