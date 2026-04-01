@@ -249,6 +249,26 @@ h2 {
   margin-bottom: 1.5rem;
 }
 
+.search-result-hidden {
+  display: none;
+}
+.search-expand-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: color 0.15s, border-color 0.15s;
+}
+.search-expand-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 /* Search result groups */
 .search-result-group {
   margin-bottom: 1.5rem;

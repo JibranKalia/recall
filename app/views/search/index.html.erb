@@ -13,45 +13,7 @@
 
   <div data-search-target="results">
     <% if @query.present? && @results %>
-      <p class="search-results-count"><%= @results.size %> result<%= @results.size == 1 ? '' : 's' %> for "<%= @query %>"</p>
-
-      <div class="session-list">
-        <% @results.group_by(&:session_id).each do |session_id, messages| %>
-          <% session = @sessions_by_id[session_id] %>
-          <% next unless session %>
-
-          <div class="search-result-group">
-            <div class="search-result-group-header">
-              <%= link_to session_path(session), class: "search-result-group-title" do %>
-                <strong><%= session.display_title %></strong>
-                <span class="search-result-group-meta">
-                  <span class="search-result-source"><%= session.source_name %></span>
-                  <span><%= session.project&.display_name %></span>
-                  <span><%= session.started_at&.strftime("%b %d, %Y") %></span>
-                  <span class="search-result-badge"><%= messages.size %> match<%= messages.size == 1 ? '' : 'es' %></span>
-                </span>
-              <% end %>
-            </div>
-
-            <% messages.each do |message| %>
-              <%= link_to session_path(session, anchor: "msg-#{message.id}"), class: "card session-card search-result-card", target: "_blank" do %>
-                <div class="session-card-body">
-                  <div class="search-result-meta">
-                    <span class="search-result-badge"><%= message.role %></span>
-                  </div>
-                  <div class="search-result-snippet">
-                    <% if message.respond_to?(:snippet) && message.snippet.present? %>
-                      <%= sanitize message.snippet, tags: %w[mark] %>
-                    <% else %>
-                      <%= message.content_text&.truncate(200) %>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
+      <%= render partial: "search/results" %>
     <% end %>
   </div>
 </div>

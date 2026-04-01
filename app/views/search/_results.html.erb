@@ -5,8 +5,9 @@
     <% @results.group_by(&:session_id).each do |session_id, messages| %>
       <% session = @sessions_by_id[session_id] %>
       <% next unless session %>
+      <% sorted = messages.sort_by { |m| m.role == "tool_result" ? 1 : 0 } %>
 
-      <div class="search-result-group">
+      <div class="search-result-group" data-controller="expandable" data-expandable-limit-value="3">
         <div class="search-result-group-header">
           <%= link_to session_path(session), class: "search-result-group-title" do %>
             <strong><%= session.display_title %></strong>
@@ -19,8 +20,8 @@
           <% end %>
         </div>
 
-        <% messages.each do |message| %>
-          <%= link_to session_path(session, anchor: "msg-#{message.id}"), class: "card session-card search-result-card", target: "_blank" do %>
+        <% sorted.each_with_index do |message, i| %>
+          <%= link_to session_path(session, anchor: "msg-#{message.id}"), class: "card session-card search-result-card #{'search-result-hidden' if i >= 3}", data: { expandable_target: (i >= 3 ? "item" : nil) }, target: "_blank" do %>
             <div class="session-card-body">
               <div class="search-result-meta">
                 <span class="search-result-badge"><%= message.role %></span>
@@ -34,6 +35,12 @@
               </div>
             </div>
           <% end %>
+        <% end %>
+
+        <% if sorted.size > 3 %>
+          <button class="search-expand-btn" data-action="expandable#toggle" data-expandable-target="button">
+            Show <%= sorted.size - 3 %> more
+          </button>
         <% end %>
       </div>
     <% end %>
