@@ -67,34 +67,60 @@ module Recall
           end
         end
 
+        entries = parse_jsonl(path)
+        session_attrs = extract_session_attrs(entries, path, checksum, size)
+        return if session_attrs.nil?
+
         ActiveRecord::Base.transaction do
-          existing&.destroy!
-
-          entries = parse_jsonl(path)
-          session_attrs = extract_session_attrs(entries, path, checksum, size)
-          return if session_attrs.nil?
-
-          project = find_or_create_project(session_attrs[:cwd])
-          session = project.sessions.create!(session_attrs.except(:cwd))
-
-          messages = extract_messages(entries)
-          messages.each do |attrs|
-            # Strip null bytes and invalid UTF-8 that break SQLite FTS5 triggers
-            if attrs[:content_text]
-              attrs[:content_text] = attrs[:content_text]
-                .encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
-                .gsub("\x00", "")
-            end
-            session.messages.create!(attrs)
+          if existing
+            update_session(existing, entries, session_attrs, checksum, size)
+          else
+            create_session(entries, session_attrs)
           end
-
-          session.update_columns(
-            started_at: session.messages.minimum(:timestamp),
-            ended_at: session.messages.maximum(:timestamp)
-          )
         end
 
         @stats[:imported] += 1
+      end
+
+      def create_session(entries, session_attrs)
+        project = find_or_create_project(session_attrs[:cwd])
+        session = project.sessions.create!(session_attrs.except(:cwd))
+        insert_messages(session, extract_messages(entries))
+        update_session_timestamps(session)
+      end
+
+      def update_session(session, entries, session_attrs, checksum, size)
+        session.update!(
+          source_checksum: checksum,
+          source_size: size,
+          title: session_attrs[:title],
+          model: session_attrs[:model],
+          total_input_tokens: session_attrs[:total_input_tokens],
+          total_output_tokens: session_attrs[:total_output_tokens]
+        )
+
+        existing_ids = session.messages.pluck(:external_id).to_set
+        new_messages = extract_messages(entries).reject { |m| existing_ids.include?(m[:external_id]) }
+        insert_messages(session, new_messages)
+        update_session_timestamps(session)
+      end
+
+      def insert_messages(session, messages)
+        messages.each do |attrs|
+          if attrs[:content_text]
+            attrs[:content_text] = attrs[:content_text]
+              .encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+              .gsub("\x00", "")
+          end
+          session.messages.create!(attrs)
+        end
+      end
+
+      def update_session_timestamps(session)
+        session.update_columns(
+          started_at: session.messages.minimum(:timestamp),
+          ended_at: session.messages.maximum(:timestamp)
+        )
       end
 
       def parse_jsonl(path)

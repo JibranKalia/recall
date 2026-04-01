@@ -593,34 +593,34 @@ h2 {
 /* ── Jump to bottom ── */
 .jump-bottom-btn {
   position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  width: 36px;
-  height: 36px;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
   border-radius: 99px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-hover);
   background: var(--bg-surface);
-  color: var(--text-muted);
-  font-size: 1rem;
+  color: var(--text-secondary);
+  font-size: 1.25rem;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: opacity 0.2s, transform 0.2s, color 0.15s, border-color 0.15s;
-  opacity: 0.6;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px var(--border);
+  transition: opacity 0.25s, transform 0.25s, box-shadow 0.2s, color 0.15s;
+  opacity: 1;
   z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .jump-bottom-btn:hover {
-  opacity: 1;
   color: var(--accent);
-  border-color: var(--accent);
-  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.16), 0 0 0 1px var(--accent);
+  transform: translateX(-50%) translateY(-2px);
 }
 .jump-bottom-btn.hidden {
   opacity: 0;
   pointer-events: none;
-  transform: translateY(4px);
+  transform: translateX(-50%) translateY(8px);
 }
 
 /* ── Empty state ── */
