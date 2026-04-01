@@ -4,6 +4,11 @@
 #   Ensure the SQLite 3 gem is defined in your Gemfile
 #   gem "sqlite3"
 #
+# Development databases live in ~/.config/recall/ so the CLI can find them
+# regardless of working directory. Override with RECALL_DATA_DIR if needed.
+#
+<% data_dir = ENV.fetch("RECALL_DATA_DIR") { File.join(Dir.home, ".config", "recall") } %>
+
 default: &default
   adapter: sqlite3
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
@@ -11,7 +16,7 @@ default: &default
 
 development:
   <<: *default
-  database: storage/development.sqlite3
+  database: <%= File.join(data_dir, "development.sqlite3") %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
