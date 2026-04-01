@@ -267,10 +267,12 @@ GEM
       erb
       psych (>= 4.0.0)
       tsort
+    redcarpet (3.6.1)
     regexp_parser (2.11.3)
     reline (0.6.3)
       io-console (~> 0.5)
     rexml (3.4.4)
+    rouge (4.7.0)
     rubocop (1.86.0)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
@@ -397,6 +399,8 @@ DEPENDENCIES
   propshaft
   puma (>= 5.0)
   rails (~> 8.1.2)
+  redcarpet
+  rouge
   rubocop-rails-omakase
   selenium-webdriver
   solid_cable

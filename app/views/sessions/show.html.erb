@@ -34,11 +34,7 @@
         <% end %>
       </div>
 
-      <% if message.role == "assistant" %>
-        <%= render_assistant_content(message) %>
-      <% else %>
-        <div class="message-content"><%= message.content_text %></div>
-      <% end %>
+      <%= render_message_content(message) %>
     </div>
   <% end %>
 </div>
