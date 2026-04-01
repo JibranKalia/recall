@@ -2,7 +2,7 @@ class ProjectsController < ApplicationController
   def index
     @projects = Project
       .joins(:sessions)
-      .select("projects.*, MAX(sessions.started_at) AS latest_session_at")
+      .select("projects.*, MAX(sessions.updated_at) AS latest_session_at")
       .group("projects.id")
       .order("latest_session_at DESC")
 
