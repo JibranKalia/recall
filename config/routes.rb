@@ -5,5 +5,7 @@ Rails.application.routes.draw do
   resources :sessions, only: [:show]
   get "search", to: "search#index"
 
+  post "import", to: "imports#create"
+
   get "up" => "rails/health#show", as: :rails_health_check
 end

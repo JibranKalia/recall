@@ -21,6 +21,9 @@
         <%= link_to "Search", search_path, class: "nav-link" %>
       </div>
       <span class="nav-stats"><span><%= Session.count %></span> sessions &middot; <span><%= Message.count %></span> messages</span>
+      <button class="nav-refresh" data-controller="import" data-action="click->import#run" title="Import conversations">
+        <span data-import-target="icon" class="nav-refresh-icon">&#x21bb;</span>
+      </button>
     </nav>
     <main class="container">
       <%= yield %>
