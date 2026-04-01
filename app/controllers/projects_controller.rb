@@ -24,6 +24,20 @@ class ProjectsController < ApplicationController
 
   def show
     @project = Project.find(params[:id])
+    @query = params[:q].to_s.strip
+
+    if @query.present?
+      @results = Message.search(@query, limit: 50, project_id: @project.id)
+      @sessions_by_id = Session.where(id: @results.map(&:session_id).uniq)
+        .includes(:project)
+        .index_by(&:id)
+
+      if request.xhr?
+        render partial: "search/results", layout: false
+        return
+      end
+    end
+
     @sessions = @project.sessions.recent.page(params[:page])
   end
 end

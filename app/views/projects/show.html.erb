@@ -5,6 +5,24 @@
   <div class="project-path"><%= @project.path %> &middot; <%= @project.source_type.titleize %></div>
 </div>
 
+<div data-controller="search" data-search-url-value="<%= project_path(@project) %>">
+  <form action="<%= project_path(@project) %>" method="get">
+    <div class="search-form">
+      <input type="text" name="q" value="<%= @query %>" placeholder="Search this project..."
+             class="search-input" autofocus
+             data-search-target="input"
+             data-action="input->search#search">
+      <button type="submit" class="search-btn">Search</button>
+    </div>
+  </form>
+
+  <div data-search-target="results">
+    <% if @query.present? && @results %>
+      <%= render partial: "search/results" %>
+    <% end %>
+  </div>
+</div>
+
 <div class="session-list">
   <% @sessions.each do |session| %>
     <%= link_to session_path(session), class: "session-card" do %>

@@ -219,6 +219,11 @@ h2 {
   font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 .search-result-snippet mark {
   background: linear-gradient(135deg, rgba(163, 103, 44, 0.12), rgba(163, 103, 44, 0.2));

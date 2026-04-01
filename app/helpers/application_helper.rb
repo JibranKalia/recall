@@ -1,14 +1,21 @@
 module ApplicationHelper
   include MarkdownHelper
 
-  def message_css_class(role)
-    case role
+  def message_css_class(message)
+    case message.role
     when "user" then "message-user"
-    when "assistant" then "message-assistant"
+    when "assistant"
+      assistant_has_text?(message) ? "message-assistant" : "message-assistant message-assistant-tool-only"
     when "tool_result" then "message-tool-result"
     when "system" then "message-system"
     else "message-user"
     end
+  end
+
+  def assistant_has_text?(message)
+    blocks = message.parsed_content
+    return message.content_text.present? unless blocks.is_a?(Array)
+    blocks.any? { |b| b["type"] == "text" && b["text"].present? }
   end
 
   def role_css_class(role)
