@@ -15,6 +15,14 @@
   </div>
 </div>
 
+<div class="session-resume-bar" data-controller="clipboard">
+  <span class="resume-prompt">$</span>
+  <code class="resume-command" data-clipboard-target="source"><%= resume_command(@session) %></code>
+  <button class="resume-copy-btn" data-action="click->clipboard#copy" data-clipboard-target="button" title="Copy to clipboard">
+    <span data-clipboard-target="label">Copy</span>
+  </button>
+</div>
+
 <div class="message-list">
   <% @messages.each do |message| %>
     <div id="msg-<%= message.id %>" class="message <%= message_css_class(message.role) %>">

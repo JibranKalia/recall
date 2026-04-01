@@ -58,6 +58,20 @@ module ApplicationHelper
     end
   end
 
+  def resume_command(session)
+    dir = session.project.path
+    session_id = File.basename(session.external_id, ".jsonl")
+
+    case session.source_type
+    when "claude_code"
+      "cd #{dir} && claude --resume #{session_id}"
+    when "codex"
+      "cd #{dir} && codex resume #{session_id}"
+    else
+      "cd #{dir}"
+    end
+  end
+
   def render_thinking(block)
     text = block["thinking"]
     return "".html_safe if text.blank?

@@ -235,6 +235,40 @@ h2 {
   margin-bottom: 1.5rem;
 }
 
+/* Search result groups */
+.search-result-group {
+  margin-bottom: 1.5rem;
+}
+.search-result-group-header {
+  margin-bottom: 0.5rem;
+}
+.search-result-group-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  padding: 0.5rem 0;
+}
+.search-result-group-title:hover {
+  color: var(--accent);
+}
+.search-result-group-title strong {
+  font-size: 1rem;
+}
+.search-result-group-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.search-result-card {
+  margin-left: 1rem;
+  border-left: 2px solid var(--accent-dim);
+}
+
 /* ── Source Badge ── */
 .source-badge {
   display: inline-flex;
@@ -395,6 +429,61 @@ h2 {
   padding: 0.25rem 0.625rem;
   border-radius: 99px;
   border: 1px solid var(--border);
+}
+
+/* ── Resume Bar ── */
+.session-resume-bar {
+  position: sticky;
+  top: 56px; /* below nav */
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #2c2418;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.resume-prompt {
+  color: #8b9a6e;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.resume-command {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #d4c8b8;
+  flex: 1;
+  overflow-x: auto;
+  white-space: nowrap;
+  user-select: all;
+  scrollbar-width: none;
+}
+.resume-command::-webkit-scrollbar { display: none; }
+.resume-copy-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: #a39888;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.resume-copy-btn:hover {
+  color: #d4c8b8;
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+}
+.resume-copy-btn.copied {
+  color: #8b9a6e;
+  border-color: #8b9a6e;
 }
 
 /* ── Messages ── */
