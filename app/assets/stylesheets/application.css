@@ -570,6 +570,39 @@ h2 {
   outline-offset: 2px;
 }
 
+/* ── Jump to bottom ── */
+.jump-bottom-btn {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: opacity 0.2s, transform 0.2s, color 0.15s, border-color 0.15s;
+  opacity: 0.6;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.jump-bottom-btn:hover {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.jump-bottom-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+}
+
 /* ── Empty state ── */
 .empty-state {
   text-align: center;
