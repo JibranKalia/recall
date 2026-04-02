@@ -17,8 +17,13 @@ default: &default
     busy_timeout: 15000
 
 development:
-  <<: *default
-  database: <%= File.join(data_dir, "development.sqlite3") %>
+  primary:
+    <<: *default
+    database: <%= File.join(data_dir, "development.sqlite3") %>
+  queue:
+    <<: *default
+    database: <%= File.join(data_dir, "development_queue.sqlite3") %>
+    migrations_paths: db/queue_migrate
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
