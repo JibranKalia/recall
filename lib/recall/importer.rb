@@ -40,7 +40,12 @@ module Recall
     end
 
     def self.rebuild_fts
+      print "  Rebuilding message search index..."
       ActiveRecord::Base.connection.execute("INSERT INTO messages_fts(messages_fts) VALUES('rebuild')")
+      puts " done."
+      print "  Rebuilding session search index..."
+      ActiveRecord::Base.connection.execute("INSERT INTO sessions_fts(sessions_fts) VALUES('rebuild')")
+      puts " done."
     end
   end
 end

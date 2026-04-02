@@ -37,7 +37,7 @@ module Recall
       result = call_ollama(context)
       return nil unless result
 
-      session.update_columns(custom_title: result[:title], summary: result[:summary])
+      session.update!(custom_title: result[:title], summary: result[:summary])
       result[:title]
     rescue => e
       warn "  Title generation failed for session #{session.id}: #{e.message}"

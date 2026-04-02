@@ -26,7 +26,21 @@ CREATE TABLE IF NOT EXISTS 'messages_fts_data'(id INTEGER PRIMARY KEY, block BLO
 CREATE TABLE IF NOT EXISTS 'messages_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
 CREATE TABLE IF NOT EXISTS 'messages_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
 CREATE TABLE IF NOT EXISTS 'messages_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
+CREATE VIRTUAL TABLE sessions_fts USING fts5(
+  title,
+  custom_title,
+  summary,
+  content='sessions',
+  content_rowid='id',
+  tokenize='porter unicode61'
+)
+/* sessions_fts(title,custom_title,summary) */;
+CREATE TABLE IF NOT EXISTS 'sessions_fts_data'(id INTEGER PRIMARY KEY, block BLOB);
+CREATE TABLE IF NOT EXISTS 'sessions_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS 'sessions_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
+CREATE TABLE IF NOT EXISTS 'sessions_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
 INSERT INTO "schema_migrations" (version) VALUES
+('20260402174821'),
 ('20260402172727'),
 ('20260402165150'),
 ('20260331190442'),
