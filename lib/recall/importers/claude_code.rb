@@ -1,7 +1,7 @@
 module Recall
   module Importers
     class ClaudeCode < Base
-      SKIP_TYPES = %w[file-history-snapshot last-prompt queue-operation].freeze
+      SKIP_TYPES = %w[file-history-snapshot last-prompt permission-mode queue-operation].freeze
 
       def initialize(base_dir:, source_name:)
         super()
@@ -66,7 +66,7 @@ module Recall
           title: title,
           model: model,
           git_branch: first_msg["gitBranch"],
-          cwd: first_msg["cwd"],
+          cwd: first_msg["cwd"] || entries.lazy.filter_map { |e| e["cwd"] }.first,
           total_input_tokens: input_tokens,
           total_output_tokens: output_tokens
         }

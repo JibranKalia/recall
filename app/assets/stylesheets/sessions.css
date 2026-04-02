@@ -102,6 +102,18 @@
   }
 }
 
+.session-summary {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  background: var(--bg-surface-dim);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1rem 0.75rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
 .session-meta {
   display: flex;
   flex-wrap: wrap;

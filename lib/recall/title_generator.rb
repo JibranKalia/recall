@@ -52,7 +52,7 @@ module Recall
       puts "Generating titles for #{total} sessions..."
       generated = 0
 
-      sessions.find_each do |session|
+      sessions.each do |session|
         title = generate(session)
         if title.present?
           generated += 1

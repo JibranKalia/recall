@@ -19,6 +19,9 @@
       <span class="session-meta-tag"><%= number_with_delimiter(@session.total_tokens) %> tokens</span>
     <% end %>
   </div>
+  <% if @session.summary.present? %>
+    <div class="session-summary prose"><%= render_markdown @session.summary %></div>
+  <% end %>
 </div>
 
 <div class="session-resume-bar" data-controller="clipboard">
