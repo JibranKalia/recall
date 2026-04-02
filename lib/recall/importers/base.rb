@@ -87,6 +87,7 @@ module Recall
         session = project.sessions.create!(session_attrs.except(:cwd))
         insert_messages(session, extract_messages(entries))
         update_session_timestamps(session)
+        generate_title(session)
       end
 
       def update_session(session, entries, session_attrs, checksum, size)
@@ -103,6 +104,7 @@ module Recall
         new_messages = extract_messages(entries).reject { |m| existing_ids.include?(m[:external_id]) }
         insert_messages(session, new_messages)
         update_session_timestamps(session)
+        generate_title(session) if new_messages.any?
       end
 
       def insert_messages(session, messages)
@@ -141,6 +143,11 @@ module Recall
         Project.find_or_create_by!(path: path, source_type: source_type) do |p|
           p.name = name
         end
+      end
+
+      def generate_title(session)
+        title = Recall::TitleGenerator.generate(session)
+        session.update_column(:custom_title, title) if title.present?
       end
 
       def log_stats

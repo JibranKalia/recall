@@ -14,7 +14,7 @@ class Session < ApplicationRecord
   scope :page, ->(num, per: 30) { limit(per).offset([(num.to_i - 1), 0].max * per) }
 
   def display_title
-    title.presence&.truncate(120) || "Untitled session"
+    custom_title.presence || title.presence&.truncate(120) || "Untitled session"
   end
 
   def duration

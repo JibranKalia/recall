@@ -24,6 +24,19 @@ namespace :recall do
     Recall::Importer.reimport_all
   end
 
+  desc "Generate titles for sessions missing them"
+  task generate_titles: :environment do
+    batch_size = (ENV["BATCH_SIZE"] || 50).to_i
+    Recall::TitleGenerator.generate_missing(batch_size: batch_size)
+  end
+
+  desc "Regenerate all session titles"
+  task regenerate_titles: :environment do
+    Session.update_all(custom_title: nil)
+    batch_size = (ENV["BATCH_SIZE"] || 50).to_i
+    Recall::TitleGenerator.generate_missing(batch_size: batch_size)
+  end
+
   desc "Show import stats"
   task stats: :environment do
     puts "Recall Stats"
