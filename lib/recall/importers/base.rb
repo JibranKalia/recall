@@ -146,8 +146,7 @@ module Recall
       end
 
       def generate_title(session)
-        title = Recall::TitleGenerator.generate(session)
-        session.update_column(:custom_title, title) if title.present?
+        Recall::TitleGenerator.generate(session)
       end
 
       def log_stats

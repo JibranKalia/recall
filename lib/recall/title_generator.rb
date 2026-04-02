@@ -4,10 +4,22 @@ module Recall
   class TitleGenerator
     OLLAMA_URL = "http://localhost:11434/api/generate"
     MODEL = "qwen2.5:14b"
-    MAX_CONTEXT_CHARS = 2000
+    MAX_CONTEXT_CHARS = 32_000
 
     SYSTEM_PROMPT = <<~PROMPT.freeze
-      You are a title generator. Given the start of a conversation between a user and an AI coding assistant, generate a short, descriptive title (5-10 words max). The title should capture the main intent or topic. Output ONLY the title, nothing else. No quotes, no punctuation at the end.
+      You are a conversation summarizer. Given the beginning and end of a conversation between a user and an AI coding assistant, generate:
+
+      1. A descriptive title (up to 15 words) that captures the main intent, topic, and outcome.
+      2. A bullet-point summary (3-7 bullets) of what was discussed and accomplished.
+
+      Use this exact format:
+
+      Title: <title here>
+
+      Summary:
+      - <bullet 1>
+      - <bullet 2>
+      - <bullet 3>
     PROMPT
 
     def self.generate(session)
@@ -22,7 +34,11 @@ module Recall
       context = build_context(session)
       return nil if context.blank?
 
-      call_ollama(context)
+      result = call_ollama(context)
+      return nil unless result
+
+      session.update_columns(custom_title: result[:title], summary: result[:summary])
+      result[:title]
     rescue => e
       warn "  Title generation failed for session #{session.id}: #{e.message}"
       nil
@@ -39,7 +55,6 @@ module Recall
       sessions.find_each do |session|
         title = generate(session)
         if title.present?
-          session.update_column(:custom_title, title)
           generated += 1
           puts "  [#{generated}/#{total}] #{title}"
         end
@@ -51,42 +66,66 @@ module Recall
     private
 
     def build_context(session)
-      messages = session.messages.order(:position).limit(6)
-      return nil if messages.empty?
+      all_messages = session.messages.where.not(role: "tool_result").order(:position)
+      return nil if all_messages.empty?
 
-      parts = messages.map do |m|
-        role = m.role == "tool_result" ? "tool_result" : m.role
-        text = m.content_text.to_s.truncate(500)
-        "#{role}: #{text}"
+      beginning = all_messages.first(15)
+      ending = all_messages.last(15)
+
+      # Deduplicate if session is short and beginning/ending overlap
+      combined = (beginning + ending).uniq(&:id)
+
+      half_budget = MAX_CONTEXT_CHARS / 2
+
+      beginning_parts = format_messages(beginning, half_budget)
+      ending_parts = format_messages(ending, half_budget)
+
+      if combined.length == (beginning + ending).uniq(&:id).length && combined == beginning
+        beginning_parts.join("\n\n").truncate(MAX_CONTEXT_CHARS)
+      else
+        "[Beginning of conversation]\n#{beginning_parts.join("\n\n")}\n\n[End of conversation]\n#{ending_parts.join("\n\n")}".truncate(MAX_CONTEXT_CHARS)
       end
+    end
 
-      parts.join("\n\n").truncate(MAX_CONTEXT_CHARS)
+    def format_messages(messages, budget)
+      per_message = budget / [messages.size, 1].max
+      messages.map do |m|
+        text = m.content_text.to_s.truncate(per_message)
+        "#{m.role}: #{text}"
+      end
     end
 
     def call_ollama(context)
       response = HTTParty.post(OLLAMA_URL,
         body: {
           model: MODEL,
-          prompt: "#{SYSTEM_PROMPT}\n\nConversation:\n#{context}\n\nTitle:",
+          prompt: "#{SYSTEM_PROMPT}\n\nConversation:\n#{context}",
           stream: false,
-          options: { temperature: 0.3, num_predict: 30 }
+          options: { temperature: 0.3, num_predict: 300 }
         }.to_json,
         headers: { "Content-Type" => "application/json" },
-        timeout: 30
+        timeout: 120
       )
 
       return nil unless response.success?
 
-      clean_title(response.parsed_response["response"])
+      parse_response(response.parsed_response["response"])
     end
 
-    def clean_title(raw)
+    def parse_response(raw)
       return nil if raw.blank?
 
-      title = raw.strip.lines.first.to_s.strip
-      title = title.delete_prefix('"').delete_suffix('"')
-      title = title.delete_prefix("Title:").strip
-      title.truncate(150).presence
+      # Extract title
+      title_match = raw.match(/Title:\s*(.+?)(?:\n|$)/)
+      return nil unless title_match
+
+      title = title_match[1].strip.delete_prefix('"').delete_suffix('"').truncate(200)
+
+      # Extract summary (everything after "Summary:")
+      summary_match = raw.match(/Summary:\s*\n(.*)/m)
+      summary = summary_match ? summary_match[1].strip : nil
+
+      { title: title.presence, summary: summary.presence }
     end
   end
 end

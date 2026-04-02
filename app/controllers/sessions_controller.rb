@@ -6,8 +6,7 @@ class SessionsController < ApplicationController
 
   def regenerate_title
     @session = Session.find(params[:id])
-    title = Recall::TitleGenerator.generate(@session)
-    @session.update_column(:custom_title, title) if title.present?
+    Recall::TitleGenerator.generate(@session)
     redirect_to @session
   end
 end
