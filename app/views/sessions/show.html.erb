@@ -1,7 +1,13 @@
 <%= link_to "&larr; #{@session.project.display_name}".html_safe, project_path(@session.project), class: "back-link" %>
 
 <div class="session-header">
-  <div class="session-title"><%= @session.display_title %></div>
+  <div class="session-title">
+    <%= @session.display_title %>
+    <form action="<%= regenerate_title_session_path(@session) %>" method="post" data-controller="pending-btn" data-action="submit->pending-btn#submit">
+      <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+      <button type="submit" class="regenerate-title-btn" data-pending-btn-target="btn" title="Regenerate title">↻</button>
+    </form>
+  </div>
   <div class="session-meta">
     <span class="session-meta-tag"><%= @session.source_name %></span>
     <span class="session-meta-tag"><%= @session.started_at&.strftime("%b %d, %Y &middot; %H:%M").html_safe %></span>

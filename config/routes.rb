@@ -2,7 +2,9 @@ Rails.application.routes.draw do
   root "projects#index"
 
   resources :projects, only: [:index, :show]
-  resources :sessions, only: [:show]
+  resources :sessions, only: [:show] do
+    post :regenerate_title, on: :member
+  end
   get "search", to: "search#index"
 
   post "import", to: "imports#create"
