@@ -30,6 +30,16 @@ class Session < ApplicationRecord
   end
 
   def to_markdown(thinking: false, tool_details: false)
+    cache_key = "session/#{id}/markdown/#{messages_count}/t#{thinking ? 1 : 0}_d#{tool_details ? 1 : 0}"
+
+    Rails.cache.fetch(cache_key) do
+      build_markdown(thinking: thinking, tool_details: tool_details)
+    end
+  end
+
+  private
+
+  def build_markdown(thinking: false, tool_details: false)
     lines = []
     lines << "# #{display_title}"
     lines << ""
@@ -102,8 +112,6 @@ class Session < ApplicationRecord
 
     lines.join("\n")
   end
-
-  private
 
   def extract_message_text(message)
     blocks = message.parsed_content

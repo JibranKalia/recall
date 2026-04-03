@@ -20,6 +20,10 @@ development:
   primary:
     <<: *default
     database: <%= File.join(data_dir, "development.sqlite3") %>
+  cache:
+    <<: *default
+    database: <%= File.join(data_dir, "development_cache.sqlite3") %>
+    migrations_paths: db/cache_migrate
   queue:
     <<: *default
     database: <%= File.join(data_dir, "development_queue.sqlite3") %>
