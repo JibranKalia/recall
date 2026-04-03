@@ -6,7 +6,11 @@ class SessionsController < ApplicationController
 
   def markdown
     @session = Session.includes(:project, :messages).find(params[:id])
-    render plain: @session.to_markdown, content_type: "text/markdown"
+    options = {
+      thinking: params[:thinking] == "1",
+      tool_details: params[:tool_details] == "1"
+    }
+    render plain: @session.to_markdown(**options), content_type: "text/markdown"
   end
 
   def regenerate_title

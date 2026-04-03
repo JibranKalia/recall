@@ -30,13 +30,16 @@
   <button class="resume-copy-btn" data-action="click->clipboard#copy" data-clipboard-target="button" title="Copy to clipboard">
     <span data-clipboard-target="label">Copy</span>
   </button>
-  <button class="resume-copy-btn copy-markdown-btn"
-          data-controller="copy-markdown"
-          data-copy-markdown-url-value="<%= markdown_session_path(@session) %>"
-          data-action="click->copy-markdown#copy"
-          title="Copy full session as Markdown">
-    <span data-copy-markdown-target="label">Copy as Markdown</span>
-  </button>
+  <div class="copy-markdown-wrapper" data-controller="copy-markdown" data-copy-markdown-url-value="<%= markdown_session_path(@session) %>" data-action="click@window->copy-markdown#close">
+    <button class="resume-copy-btn" data-action="click->copy-markdown#toggle:stop" title="Copy session as Markdown">
+      <span data-copy-markdown-target="label">Copy as Markdown</span>
+    </button>
+    <div class="copy-markdown-menu hidden" data-copy-markdown-target="menu" data-action="click->copy-markdown#toggle:stop">
+      <button class="copy-markdown-option" data-action="click->copy-markdown#copy:stop" data-copy-markdown-thinking-param="false" data-copy-markdown-tool-details-param="false">Compact</button>
+      <button class="copy-markdown-option" data-action="click->copy-markdown#copy:stop" data-copy-markdown-thinking-param="false" data-copy-markdown-tool-details-param="true">With tool details</button>
+      <button class="copy-markdown-option" data-action="click->copy-markdown#copy:stop" data-copy-markdown-thinking-param="true" data-copy-markdown-tool-details-param="true">Full (thinking + tools)</button>
+    </div>
+  </div>
 </div>
 
 <div class="message-list" data-controller="code-copy">

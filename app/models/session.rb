@@ -29,47 +29,78 @@ class Session < ApplicationRecord
     (total_input_tokens || 0) + (total_output_tokens || 0)
   end
 
-  def to_markdown
+  def to_markdown(thinking: false, tool_details: false)
     lines = []
     lines << "# #{display_title}"
     lines << ""
-    lines << "> **Project:** #{project.path}  "
-    lines << "> **Date:** #{started_at&.strftime('%Y-%m-%d %H:%M')}  " if started_at
-    lines << "> **Model:** #{model}" if model.present?
+    lines << "**Session ID:** #{external_id}"
+    lines << "**Project:** #{project.path}"
+    lines << "**Created:** #{started_at&.strftime('%Y-%m-%d %H:%M')}" if started_at
+    lines << "**Model:** #{model}" if model.present?
     lines << ""
     lines << "---"
+    lines << ""
 
     messages.ordered.each do |msg|
       case msg.role
       when "user"
         text = extract_message_text(msg)
         next if text.blank?
-        lines << ""
         lines << "## User"
         lines << ""
         lines << text
+        lines << ""
+        lines << "---"
+        lines << ""
       when "assistant"
         text = extract_message_text(msg)
-        tool_calls = msg.tool_calls
+        tool_uses = msg.tool_calls
+        thinking_text = thinking ? msg.thinking_text : nil
 
-        if text.present?
-          lines << ""
+        if text.present? || thinking_text.present?
           lines << "## Assistant"
           lines << ""
-          lines << text
+          if thinking_text.present?
+            lines << "_Thinking:_"
+            lines << ""
+            lines << thinking_text
+            lines << ""
+          end
+          lines << text if text.present?
+          lines << ""
         end
 
-        tool_calls.each do |tc|
-          summary = tool_call_summary(tc["name"], tc["input"])
+        tool_uses.each do |tc|
+          lines << "**Tool: #{tc['name']}**"
+          if tool_details && tc["input"]
+            lines << ""
+            lines << "**Input:**"
+            lines << "```json"
+            lines << JSON.pretty_generate(tc["input"])
+            lines << "```"
+          end
           lines << ""
-          lines << "_Tool: #{tc['name']}#{summary ? " — #{summary}" : ""}_"
         end
+        lines << "---"
+        lines << ""
       when "tool_result"
-        # Skip tool results to keep the export readable
+        next unless tool_details
+        blocks = msg.parsed_content
+        block = blocks.is_a?(Array) ? blocks.first : nil
+        content = block&.dig("content") || msg.content_text
+        is_error = block&.dig("is_error")
+
+        if content.present?
+          lines << "**#{is_error ? 'Error' : 'Output'}:**"
+          lines << "```"
+          lines << content.to_s.truncate(2000)
+          lines << "```"
+          lines << ""
+        end
       end
     end
 
-    lines.join("\n") + "\n"
+    lines.join("\n")
   end
 
   private
@@ -80,18 +111,6 @@ class Session < ApplicationRecord
       blocks.filter_map { |b| b["text"] if b["type"] == "text" }.join("\n\n")
     else
       message.content_text
-    end
-  end
-
-  def tool_call_summary(name, input)
-    case name
-    when "Bash" then input&.dig("command")&.truncate(120)
-    when "Read", "Write", "Edit" then input&.dig("file_path")
-    when "Glob" then input&.dig("pattern")
-    when "Grep" then input&.dig("pattern")
-    when "Agent" then input&.dig("description") || input&.dig("prompt")&.truncate(80)
-    when "WebSearch" then input&.dig("query")
-    when "WebFetch" then input&.dig("url")&.truncate(80)
     end
   end
 

@@ -192,6 +192,53 @@
   }
 }
 
+/* ── Copy as Markdown ── */
+.copy-markdown-wrapper {
+  position: relative;
+  flex-shrink: 0;
+
+  &.copied .resume-copy-btn {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
+.copy-markdown-menu {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  right: 0;
+  background: #222;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  min-width: 180px;
+  z-index: 100;
+  overflow: hidden;
+
+  &.hidden { display: none; }
+}
+
+.copy-markdown-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: #b4b4b4;
+  background: none;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+
+  &:hover {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+  }
+
+  & + & { border-top: 1px solid rgba(255,255,255,0.06); }
+}
+
 /* ── Back link ── */
 .back-link {
   font-family: var(--font-mono);
