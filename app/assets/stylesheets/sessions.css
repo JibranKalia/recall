@@ -150,79 +150,56 @@
   border-color: rgba(37, 99, 235, 0.2);
 }
 
-/* ── Sticky Bar ── */
-.session-sticky-bar {
-  position: sticky;
-  top: 56px;
-  z-index: 90;
+/* ── Actions Row ── */
+.session-actions-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Resume Command Bar (static) ── */
+.session-resume-bar {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 0.75rem;
   background: #1a1a1a;
   border-radius: var(--radius-sm);
-  padding: 0;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  overflow: hidden;
-  transition: box-shadow 0.2s;
-
-  &.sticky-bar--scrolled {
-    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-    margin-left: -1.5rem;
-    margin-right: -1.5rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-  }
-}
-
-.sticky-bar-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0 0.5rem 0.875rem;
-  border-right: 1px solid rgba(255,255,255,0.08);
-  min-width: 0;
-  max-width: 320px;
-  flex-shrink: 1;
-
-  &.hidden { display: none; }
-}
-
-.sticky-bar-back {
-  color: var(--accent);
-  font-size: 0.8125rem;
-  flex-shrink: 0;
-  opacity: 0.7;
-  transition: opacity 0.15s;
-
-  &:hover { opacity: 1; }
-}
-
-.sticky-bar-name {
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #e0e0e0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  letter-spacing: -0.01em;
-}
-
-.sticky-bar-resume {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0 0.5rem 0.875rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
   flex: 1;
   min-width: 0;
 }
 
-.sticky-bar-actions {
+.copy-markdown-wrapper {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.5rem;
   flex-shrink: 0;
+}
+
+.session-action-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-sm);
+  padding: 0 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  height: 100%;
+
+  &:hover {
+    color: var(--accent);
+    background: var(--accent-dim);
+    border-color: var(--border-accent);
+  }
+}
+
+.copy-markdown-wrapper.copied .session-action-btn {
+  color: var(--accent);
+  border-color: var(--border-accent);
 }
 
 .resume-prompt {
@@ -271,25 +248,74 @@
   }
 }
 
-/* ── Copy as Markdown ── */
-.copy-markdown-wrapper {
-  position: relative;
-  flex-shrink: 0;
+/* ── Sticky Bar ── */
+.session-sticky-bar {
+  position: sticky;
+  top: 56px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0;
+  margin-bottom: 1.5rem;
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
+  transition: opacity 0.2s, height 0.2s;
 
-  &.copied .resume-copy-btn {
-    color: var(--accent);
-    border-color: var(--accent);
+  &.sticky-bar--scrolled {
+    opacity: 1;
+    pointer-events: auto;
+    height: auto;
+    overflow: visible;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
   }
+}
+
+.sticky-bar-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+
+  &.hidden { display: none; }
+}
+
+.sticky-bar-back {
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+  transition: color 0.15s;
+
+  &:hover { color: var(--accent); }
+}
+
+.sticky-bar-name {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 
 .copy-markdown-menu {
   position: absolute;
-  bottom: calc(100% + 0.5rem);
+  top: calc(100% + 0.375rem);
   right: 0;
-  background: #222;
-  border: 1px solid rgba(255,255,255,0.12);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   min-width: 180px;
   z-index: 100;
   overflow: hidden;
@@ -303,7 +329,7 @@
   text-align: left;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  color: #b4b4b4;
+  color: var(--text-secondary);
   background: none;
   border: none;
   padding: 0.5rem 0.75rem;
@@ -311,11 +337,11 @@
   transition: background 0.1s, color 0.1s;
 
   &:hover {
-    background: rgba(255,255,255,0.08);
-    color: #fff;
+    background: var(--bg-surface-hover);
+    color: var(--text);
   }
 
-  & + & { border-top: 1px solid rgba(255,255,255,0.06); }
+  & + & { border-top: 1px solid var(--border); }
 }
 
 /* ── Back link ── */

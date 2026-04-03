@@ -29,31 +29,32 @@
     <% end %>
   </div>
 
-  <div class="session-sticky-bar" data-sticky-header-target="stickyBar" data-controller="clipboard">
+  <div class="session-actions-row">
+    <div class="session-resume-bar" data-controller="clipboard">
+      <span class="resume-prompt">$</span>
+      <code class="resume-command" data-clipboard-target="source"><%= resume_command(@session) %></code>
+      <button class="resume-copy-btn" data-action="click->clipboard#copy" data-clipboard-target="button" title="Copy resume command">
+        <span data-clipboard-target="label">Copy</span>
+      </button>
+    </div>
+    <div class="copy-markdown-wrapper" data-controller="copy-markdown" data-copy-markdown-url-value="<%= markdown_session_path(@session) %>" data-action="click@window->copy-markdown#close">
+      <button class="session-action-btn" data-action="click->copy-markdown#toggle" title="Copy session as Markdown">
+        <span data-copy-markdown-target="label">Copy as Markdown</span>
+      </button>
+      <div class="copy-markdown-menu hidden" data-copy-markdown-target="menu">
+        <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="false" data-copy-markdown-tool-details-param="false">Conversation only</button>
+        <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="false" data-copy-markdown-tool-details-param="true">+ Tool I/O</button>
+        <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="true" data-copy-markdown-tool-details-param="true">+ Tool I/O + Thinking</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="session-sticky-bar" data-sticky-header-target="stickyBar">
     <div class="sticky-bar-title hidden" data-sticky-header-target="stickyTitle">
       <%= link_to project_path(@session.project), class: "sticky-bar-back", title: @session.project.display_name do %>
         &larr;
       <% end %>
       <span class="sticky-bar-name"><%= @session.display_title %></span>
-    </div>
-    <div class="sticky-bar-resume">
-      <span class="resume-prompt">$</span>
-      <code class="resume-command" data-clipboard-target="source"><%= resume_command(@session) %></code>
-    </div>
-    <div class="sticky-bar-actions">
-      <button class="resume-copy-btn" data-action="click->clipboard#copy" data-clipboard-target="button" title="Copy to clipboard">
-        <span data-clipboard-target="label">Copy</span>
-      </button>
-      <div class="copy-markdown-wrapper" data-controller="copy-markdown" data-copy-markdown-url-value="<%= markdown_session_path(@session) %>" data-action="click@window->copy-markdown#close">
-        <button class="resume-copy-btn" data-action="click->copy-markdown#toggle" title="Copy session as Markdown">
-          <span data-copy-markdown-target="label">Copy as Markdown</span>
-        </button>
-        <div class="copy-markdown-menu hidden" data-copy-markdown-target="menu">
-          <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="false" data-copy-markdown-tool-details-param="false">Conversation only</button>
-          <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="false" data-copy-markdown-tool-details-param="true">+ Tool I/O</button>
-          <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="true" data-copy-markdown-tool-details-param="true">+ Tool I/O + Thinking</button>
-        </div>
-      </div>
     </div>
   </div>
 </div>
