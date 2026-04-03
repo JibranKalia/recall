@@ -51,6 +51,7 @@ class Session < ApplicationRecord
     lines << "---"
     lines << ""
 
+    last_role = nil
     messages.ordered.each do |msg|
       case msg.role
       when "user"
@@ -62,26 +63,38 @@ class Session < ApplicationRecord
         lines << ""
         lines << "---"
         lines << ""
+        last_role = "user"
       when "assistant"
         text = extract_message_text(msg)
         tool_uses = msg.tool_calls
         thinking_text = thinking ? msg.thinking_text : nil
 
-        if text.present? || thinking_text.present?
+        has_text = text.present? && text.strip != "No response requested."
+        has_thinking = thinking_text.present?
+        has_tools = tool_uses.any?
+
+        next unless has_text || has_thinking || has_tools
+
+        # Only emit header if we have text/thinking, or this is the first assistant after a user
+        if has_text || has_thinking || last_role != "assistant"
           lines << "## Assistant"
-          lines << ""
-          if thinking_text.present?
-            lines << "_Thinking:_"
-            lines << ""
-            lines << thinking_text
-            lines << ""
-          end
-          lines << text if text.present?
           lines << ""
         end
 
+        if has_thinking
+          lines << "_Thinking:_"
+          lines << ""
+          lines << thinking_text
+          lines << ""
+        end
+
+        lines << text << "" if has_text
+
         tool_uses.each do |tc|
-          lines << "**Tool: #{tc['name']}**"
+          summary = tool_call_summary(tc["name"], tc["input"])
+          line = "**Tool: #{tc['name']}**"
+          line += " — `#{summary}`" if summary.present?
+          lines << line
           if tool_details && tc["input"]
             lines << ""
             lines << "**Input:**"
@@ -93,6 +106,7 @@ class Session < ApplicationRecord
         end
         lines << "---"
         lines << ""
+        last_role = "assistant"
       when "tool_result"
         next unless tool_details
         blocks = msg.parsed_content
@@ -111,6 +125,18 @@ class Session < ApplicationRecord
     end
 
     lines.join("\n")
+  end
+
+  def tool_call_summary(name, input)
+    case name
+    when "Bash" then input&.dig("command")&.truncate(120)
+    when "Read", "Write", "Edit" then input&.dig("file_path")
+    when "Glob" then input&.dig("pattern")
+    when "Grep" then input&.dig("pattern")
+    when "Agent" then input&.dig("description") || input&.dig("prompt")&.truncate(80)
+    when "WebSearch" then input&.dig("query")
+    when "WebFetch" then input&.dig("url")&.truncate(80)
+    end
   end
 
   def extract_message_text(message)
