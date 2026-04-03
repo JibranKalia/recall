@@ -51,11 +51,12 @@ class Session < ApplicationRecord
     lines << "---"
     lines << ""
 
-    last_role = nil
-    messages.ordered.each do |msg|
-      case msg.role
+    turns = group_into_turns(messages.ordered)
+
+    turns.each do |turn|
+      case turn[:role]
       when "user"
-        text = extract_message_text(msg)
+        text = turn[:texts].join("\n\n")
         next if text.blank?
         lines << "## User"
         lines << ""
@@ -63,68 +64,115 @@ class Session < ApplicationRecord
         lines << ""
         lines << "---"
         lines << ""
-        last_role = "user"
       when "assistant"
-        text = extract_message_text(msg)
-        tool_uses = msg.tool_calls
-        thinking_text = thinking ? msg.thinking_text : nil
-
-        has_text = text.present? && text.strip != "No response requested."
-        has_thinking = thinking_text.present?
-        has_tools = tool_uses.any?
+        has_text = turn[:texts].any?
+        has_thinking = thinking && turn[:thinking].any?
+        has_tools = turn[:tools].any?
 
         next unless has_text || has_thinking || has_tools
 
-        # Only emit header if we have text/thinking, or this is the first assistant after a user
-        if has_text || has_thinking || last_role != "assistant"
-          lines << "## Assistant"
-          lines << ""
-        end
+        lines << "## Assistant"
+        lines << ""
 
-        if has_thinking
-          lines << "_Thinking:_"
-          lines << ""
-          lines << thinking_text
-          lines << ""
-        end
-
-        lines << text << "" if has_text
-
-        tool_uses.each do |tc|
-          summary = tool_call_summary(tc["name"], tc["input"])
-          line = "**Tool: #{tc['name']}**"
-          line += " — `#{summary}`" if summary.present?
-          lines << line
-          if tool_details && tc["input"]
+        turn[:parts].each do |part|
+          case part[:type]
+          when :thinking
+            next unless thinking
+            lines << "_Thinking:_"
             lines << ""
-            lines << "**Input:**"
-            lines << "```json"
-            lines << JSON.pretty_generate(tc["input"])
+            lines << part[:text]
+            lines << ""
+          when :text
+            lines << part[:text]
+            lines << ""
+          when :tool_use
+            summary = tool_call_summary(part[:name], part[:input])
+            line = "**Tool: #{part[:name]}**"
+            line += " — `#{summary}`" if summary.present?
+            lines << line
+            if tool_details && part[:input]
+              lines << ""
+              lines << "**Input:**"
+              lines << "```json"
+              lines << JSON.pretty_generate(part[:input])
+              lines << "```"
+            end
+            lines << ""
+          when :tool_result
+            next unless tool_details
+            label = part[:error] ? "Error" : "Output"
+            lines << "**#{label}:**"
             lines << "```"
+            lines << part[:content].truncate(500)
+            lines << "```"
+            lines << ""
           end
-          lines << ""
         end
+
         lines << "---"
         lines << ""
-        last_role = "assistant"
-      when "tool_result"
-        next unless tool_details
-        blocks = msg.parsed_content
-        block = blocks.is_a?(Array) ? blocks.first : nil
-        content = block&.dig("content") || msg.content_text
-        is_error = block&.dig("is_error")
-
-        if content.present?
-          lines << "**#{is_error ? 'Error' : 'Output'}:**"
-          lines << "```"
-          lines << content.to_s.truncate(2000)
-          lines << "```"
-          lines << ""
-        end
       end
     end
 
     lines.join("\n")
+  end
+
+  # Group consecutive assistant + tool_result messages into single turns
+  def group_into_turns(ordered_messages)
+    turns = []
+    current_turn = nil
+
+    ordered_messages.each do |msg|
+      case msg.role
+      when "user"
+        text = extract_message_text(msg)
+        text = nil if text&.match?(/\[Request interrupted by user/)
+        next if text.blank?
+        current_turn = { role: "user", texts: [text], parts: [] }
+        turns << current_turn
+      when "assistant"
+        if current_turn.nil? || current_turn[:role] != "assistant"
+          current_turn = { role: "assistant", texts: [], thinking: [], tools: [], parts: [] }
+          turns << current_turn
+        end
+
+        blocks = msg.parsed_content
+        if blocks.is_a?(Array)
+          blocks.each do |block|
+            case block["type"]
+            when "text"
+              text = block["text"]
+              next if text.blank? || text.strip == "No response requested."
+              current_turn[:texts] << text
+              current_turn[:parts] << { type: :text, text: text }
+            when "thinking"
+              next if block["thinking"].blank?
+              current_turn[:thinking] << block["thinking"]
+              current_turn[:parts] << { type: :thinking, text: block["thinking"] }
+            when "tool_use"
+              current_turn[:tools] << block
+              current_turn[:parts] << { type: :tool_use, name: block["name"], input: block["input"] }
+            end
+          end
+        elsif msg.content_text.present? && msg.content_text.strip != "No response requested."
+          current_turn[:texts] << msg.content_text
+          current_turn[:parts] << { type: :text, text: msg.content_text }
+        end
+      when "tool_result"
+        # Attach to current assistant turn
+        if current_turn && current_turn[:role] == "assistant"
+          blocks = msg.parsed_content
+          block = blocks.is_a?(Array) ? blocks.first : nil
+          content = block&.dig("content") || msg.content_text
+          is_error = block&.dig("is_error")
+          if content.present?
+            current_turn[:parts] << { type: :tool_result, content: content.to_s, error: is_error }
+          end
+        end
+      end
+    end
+
+    turns
   end
 
   def tool_call_summary(name, input)

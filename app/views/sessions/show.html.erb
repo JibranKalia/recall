@@ -1,43 +1,59 @@
-<%= link_to "&larr; #{@session.project.display_name}".html_safe, project_path(@session.project), class: "back-link" %>
-
-<div class="session-header">
-  <div class="session-title">
-    <%= @session.display_title %>
-    <form action="<%= regenerate_title_session_path(@session) %>" method="post" data-controller="pending-btn" data-action="submit->pending-btn#submit">
-      <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-      <button type="submit" class="regenerate-title-btn" data-pending-btn-target="btn" title="Regenerate title">↻</button>
-    </form>
-  </div>
-  <div class="session-meta">
-    <span class="session-meta-tag"><%= @session.source_name %></span>
-    <span class="session-meta-tag"><%= @session.started_at&.strftime("%b %d, %Y &middot; %H:%M").html_safe %></span>
-    <% if @session.model.present? %>
-      <span class="session-meta-tag"><%= @session.model %></span>
+<div data-controller="sticky-header">
+  <div class="session-header" data-sticky-header-target="header">
+    <%= link_to project_path(@session.project), class: "back-link" do %>
+      <span class="back-arrow">&larr;</span> <%= @session.project.display_name %>
     <% end %>
-    <span class="session-meta-tag"><%= @session.messages_count %> messages</span>
-    <% if @session.total_tokens > 0 %>
-      <span class="session-meta-tag"><%= number_with_delimiter(@session.total_tokens) %> tokens</span>
+
+    <div class="session-title-row">
+      <h1 class="session-title"><%= @session.display_title %></h1>
+      <form action="<%= regenerate_title_session_path(@session) %>" method="post" data-controller="pending-btn" data-action="submit->pending-btn#submit">
+        <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+        <button type="submit" class="regenerate-title-btn" data-pending-btn-target="btn" title="Regenerate title">↻</button>
+      </form>
+    </div>
+
+    <div class="session-meta">
+      <span class="session-meta-tag session-meta-tag--source"><%= @session.source_name %></span>
+      <span class="session-meta-tag"><%= @session.started_at&.strftime("%b %d, %Y &middot; %H:%M").html_safe %></span>
+      <% if @session.model.present? %>
+        <span class="session-meta-tag session-meta-tag--model"><%= @session.model %></span>
+      <% end %>
+      <span class="session-meta-tag"><%= @session.messages_count %> messages</span>
+      <% if @session.total_tokens > 0 %>
+        <span class="session-meta-tag"><%= number_with_delimiter(@session.total_tokens) %> tokens</span>
+      <% end %>
+    </div>
+
+    <% if @session.summary.present? %>
+      <div class="session-summary prose"><%= render_markdown @session.summary %></div>
     <% end %>
   </div>
-  <% if @session.summary.present? %>
-    <div class="session-summary prose"><%= render_markdown @session.summary %></div>
-  <% end %>
-</div>
 
-<div class="session-resume-bar" data-controller="clipboard">
-  <span class="resume-prompt">$</span>
-  <code class="resume-command" data-clipboard-target="source"><%= resume_command(@session) %></code>
-  <button class="resume-copy-btn" data-action="click->clipboard#copy" data-clipboard-target="button" title="Copy to clipboard">
-    <span data-clipboard-target="label">Copy</span>
-  </button>
-  <div class="copy-markdown-wrapper" data-controller="copy-markdown" data-copy-markdown-url-value="<%= markdown_session_path(@session) %>" data-action="click@window->copy-markdown#close">
-    <button class="resume-copy-btn" data-action="click->copy-markdown#toggle" title="Copy session as Markdown">
-      <span data-copy-markdown-target="label">Copy as Markdown</span>
-    </button>
-    <div class="copy-markdown-menu hidden" data-copy-markdown-target="menu">
-      <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="false" data-copy-markdown-tool-details-param="false">Conversation only</button>
-      <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="false" data-copy-markdown-tool-details-param="true">+ Tool I/O</button>
-      <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="true" data-copy-markdown-tool-details-param="true">+ Tool I/O + Thinking</button>
+  <div class="session-sticky-bar" data-sticky-header-target="stickyBar" data-controller="clipboard">
+    <div class="sticky-bar-title hidden" data-sticky-header-target="stickyTitle">
+      <%= link_to project_path(@session.project), class: "sticky-bar-back", title: @session.project.display_name do %>
+        &larr;
+      <% end %>
+      <span class="sticky-bar-name"><%= @session.display_title %></span>
+    </div>
+    <div class="sticky-bar-resume">
+      <span class="resume-prompt">$</span>
+      <code class="resume-command" data-clipboard-target="source"><%= resume_command(@session) %></code>
+    </div>
+    <div class="sticky-bar-actions">
+      <button class="resume-copy-btn" data-action="click->clipboard#copy" data-clipboard-target="button" title="Copy to clipboard">
+        <span data-clipboard-target="label">Copy</span>
+      </button>
+      <div class="copy-markdown-wrapper" data-controller="copy-markdown" data-copy-markdown-url-value="<%= markdown_session_path(@session) %>" data-action="click@window->copy-markdown#close">
+        <button class="resume-copy-btn" data-action="click->copy-markdown#toggle" title="Copy session as Markdown">
+          <span data-copy-markdown-target="label">Copy as Markdown</span>
+        </button>
+        <div class="copy-markdown-menu hidden" data-copy-markdown-target="menu">
+          <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="false" data-copy-markdown-tool-details-param="false">Conversation only</button>
+          <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="false" data-copy-markdown-tool-details-param="true">+ Tool I/O</button>
+          <button class="copy-markdown-option" data-action="click->copy-markdown#copy" data-copy-markdown-thinking-param="true" data-copy-markdown-tool-details-param="true">+ Tool I/O + Thinking</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
