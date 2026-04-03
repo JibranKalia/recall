@@ -109,6 +109,16 @@ module Recall
         content_text = text_parts.join("\n").presence
         return nil if content_text.blank?
 
+        # Normalize block types: input_text/output_text → text for consistent rendering
+        normalized_content = content.map do |block|
+          case block["type"]
+          when "input_text", "output_text"
+            block.merge("type" => "text", "text" => block["text"])
+          else
+            block
+          end
+        end
+
         timestamp = entry["timestamp"] ? Time.parse(entry["timestamp"]) : nil
 
         {
@@ -117,7 +127,7 @@ module Recall
           role: role,
           position: position,
           content_text: content_text,
-          content_json: content.to_json,
+          content_json: normalized_content.to_json,
           model: nil,
           input_tokens: nil,
           output_tokens: nil,

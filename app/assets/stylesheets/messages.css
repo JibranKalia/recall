@@ -84,6 +84,14 @@
   margin-bottom: 0.625rem;
 }
 
+.message-role-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+.role-label-user { color: var(--text); }
+.role-label-assistant { color: var(--accent); }
+
 .message-timestamp {
   font-family: var(--font-mono);
   font-size: 0.6875rem;

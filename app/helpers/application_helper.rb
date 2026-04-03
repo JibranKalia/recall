@@ -15,7 +15,7 @@ module ApplicationHelper
   def assistant_has_text?(message)
     blocks = message.parsed_content
     return message.content_text.present? unless blocks.is_a?(Array)
-    blocks.any? { |b| b["type"] == "text" && b["text"].present? }
+    blocks.any? { |b| %w[text output_text].include?(b["type"]) && b["text"].present? }
   end
 
   def role_css_class(role)
@@ -47,7 +47,7 @@ module ApplicationHelper
     if blocks.is_a?(Array)
       safe_join(blocks.map { |block|
         case block["type"]
-        when "text"
+        when "text", "input_text"
           content_tag(:div, render_markdown(block["text"]), class: "message-content prose")
         when "image"
           content_tag(:div, content_tag(:span, "Image attachment", class: "image-placeholder"), class: "message-content")
@@ -71,7 +71,7 @@ module ApplicationHelper
 
   def render_content_block(block)
     case block["type"]
-    when "text"
+    when "text", "output_text"
       content_tag(:div, render_markdown(block["text"]), class: "message-content prose")
     when "tool_use"
       render_tool_use(block)

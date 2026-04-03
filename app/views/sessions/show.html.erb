@@ -64,10 +64,12 @@
     <div id="msg-<%= message.id %>" class="message <%= message_css_class(message) %>">
       <% if message.role == "user" %>
         <div class="message-header">
+          <span class="message-role-label role-label-user">You</span>
           <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>
         </div>
       <% elsif message.role == "assistant" && assistant_has_text?(message) %>
         <div class="message-header">
+          <span class="message-role-label role-label-assistant">Assistant</span>
           <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>
           <% if message.model.present? %>
             <span class="message-model-tag message-model-right"><%= message.model %></span>
