@@ -29,7 +29,71 @@ class Session < ApplicationRecord
     (total_input_tokens || 0) + (total_output_tokens || 0)
   end
 
+  def to_markdown
+    lines = []
+    lines << "# #{display_title}"
+    lines << ""
+    lines << "> **Project:** #{project.path}  "
+    lines << "> **Date:** #{started_at&.strftime('%Y-%m-%d %H:%M')}  " if started_at
+    lines << "> **Model:** #{model}" if model.present?
+    lines << ""
+    lines << "---"
+
+    messages.ordered.each do |msg|
+      case msg.role
+      when "user"
+        text = extract_message_text(msg)
+        next if text.blank?
+        lines << ""
+        lines << "## User"
+        lines << ""
+        lines << text
+      when "assistant"
+        text = extract_message_text(msg)
+        tool_calls = msg.tool_calls
+
+        if text.present?
+          lines << ""
+          lines << "## Assistant"
+          lines << ""
+          lines << text
+        end
+
+        tool_calls.each do |tc|
+          summary = tool_call_summary(tc["name"], tc["input"])
+          lines << ""
+          lines << "_Tool: #{tc['name']}#{summary ? " — #{summary}" : ""}_"
+        end
+      when "tool_result"
+        # Skip tool results to keep the export readable
+      end
+    end
+
+    lines.join("\n") + "\n"
+  end
+
   private
+
+  def extract_message_text(message)
+    blocks = message.parsed_content
+    if blocks.is_a?(Array)
+      blocks.filter_map { |b| b["text"] if b["type"] == "text" }.join("\n\n")
+    else
+      message.content_text
+    end
+  end
+
+  def tool_call_summary(name, input)
+    case name
+    when "Bash" then input&.dig("command")&.truncate(120)
+    when "Read", "Write", "Edit" then input&.dig("file_path")
+    when "Glob" then input&.dig("pattern")
+    when "Grep" then input&.dig("pattern")
+    when "Agent" then input&.dig("description") || input&.dig("prompt")&.truncate(80)
+    when "WebSearch" then input&.dig("query")
+    when "WebFetch" then input&.dig("url")&.truncate(80)
+    end
+  end
 
   def sync_fts
     conn = self.class.connection

@@ -3,6 +3,7 @@ Rails.application.routes.draw do
 
   resources :projects, only: [:index, :show]
   resources :sessions, only: [:show] do
+    get :markdown, on: :member
     post :regenerate_title, on: :member
   end
   get "search", to: "search#index"
