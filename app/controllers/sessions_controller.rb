@@ -16,6 +16,14 @@ class SessionsController < ApplicationController
   def regenerate_title
     @session = Session.find(params[:id])
     GenerateSummaryJob.perform_later(@session)
-    redirect_to @session
+
+    respond_to do |format|
+      format.turbo_stream {
+        render turbo_stream: turbo_stream.update("session_summary",
+          html: '<div class="session-summary-generating">Generating summary... this will update automatically when ready.</div>'.html_safe
+        )
+      }
+      format.html { redirect_to @session }
+    end
   end
 end
