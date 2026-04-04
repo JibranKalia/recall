@@ -26,18 +26,62 @@ module Recall
       - Output only bullet points, no preamble
     PROMPT
 
+    TITLE_PROMPT = <<~PROMPT.freeze
+      You are a conversation summarizer. Given a summary of an entire conversation between a user and an AI coding assistant, generate a descriptive title (up to 15 words) that captures the main intent, topic, and outcome.
+
+      Output only the title, no quotes, no preamble.
+    PROMPT
+
+    def self.generate(session)
+      new(session).generate
+    end
+
+    def self.generate_missing(batch_size: 50)
+      sessions = Session.where(custom_title: nil).order(started_at: :desc).limit(batch_size)
+      total = sessions.count
+      return if total == 0
+
+      puts "Generating summaries for #{total} sessions..."
+      generated = 0
+
+      sessions.each do |session|
+        summary = new(session).generate
+        if summary
+          generated += 1
+          puts "  [#{generated}/#{total}] #{summary.title}"
+        end
+      end
+
+      puts "Generated #{generated}/#{total} summaries."
+    end
+
     def initialize(session)
       @session = session
     end
 
-    def call
+    def generate
+      body = summarize
+      return nil if body.blank?
+
+      title = generate_title(body)
+      return nil if title.blank?
+
+      @session.summaries.create!(title: title, body: body)
+    rescue => e
+      warn "  Summary generation failed for session #{@session.id}: #{e.message}"
+      nil
+    end
+
+    private
+
+    def summarize
       messages = @session.messages.where.not(role: "tool_result").order(:position)
       return nil if messages.empty?
 
       chunks = messages.each_slice(MESSAGES_PER_CHUNK).to_a
       summary_so_far = nil
 
-      chunks.each_with_index do |chunk, i|
+      chunks.each do |chunk|
         context_line = if summary_so_far
           "Here is the summary of the conversation so far:\n#{summary_so_far}\n\nNow summarize the next portion. Only add new information."
         else
@@ -47,7 +91,7 @@ module Recall
         prompt = format(CHUNK_SYSTEM_PROMPT, context_line: context_line)
         formatted = format_messages(chunk)
 
-        result = call_ollama(prompt, formatted)
+        result = call_ollama(prompt, formatted, num_predict: 500)
         break unless result
 
         summary_so_far = if summary_so_far
@@ -60,7 +104,12 @@ module Recall
       summary_so_far
     end
 
-    private
+    def generate_title(body)
+      raw = call_ollama(TITLE_PROMPT, body, num_predict: 50)
+      return nil if raw.blank?
+
+      raw.delete_prefix('"').delete_suffix('"').truncate(200)
+    end
 
     def format_messages(messages)
       per_message = MAX_CHUNK_CHARS / [messages.size, 1].max
@@ -70,13 +119,13 @@ module Recall
       end.join("\n\n")
     end
 
-    def call_ollama(system_prompt, context)
+    def call_ollama(system_prompt, context, num_predict: 500)
       response = HTTParty.post(OLLAMA_URL,
         body: {
           model: MODEL,
           prompt: "#{system_prompt}\n\nConversation:\n#{context}",
           stream: false,
-          options: { temperature: 0.3, num_predict: 500 }
+          options: { temperature: 0.3, num_predict: num_predict }
         }.to_json,
         headers: { "Content-Type" => "application/json" },
         timeout: 120

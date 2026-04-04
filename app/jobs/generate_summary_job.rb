@@ -1,8 +1,8 @@
-class GenerateTitleJob < ApplicationJob
+class GenerateSummaryJob < ApplicationJob
   queue_as :default
 
   def perform(session)
-    Recall::TitleGenerator.generate(session)
+    Recall::Summarizer.generate(session)
     session.reload
 
     Turbo::StreamsChannel.broadcast_update_to(

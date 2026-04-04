@@ -39,12 +39,13 @@ CREATE TABLE IF NOT EXISTS 'sessions_fts_data'(id INTEGER PRIMARY KEY, block BLO
 CREATE TABLE IF NOT EXISTS 'sessions_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
 CREATE TABLE IF NOT EXISTS 'sessions_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
 CREATE TABLE IF NOT EXISTS 'sessions_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS "session_summaries" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "session_id" integer NOT NULL, "body" text NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_3c0482b265"
+CREATE TABLE IF NOT EXISTS "session_summaries" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "session_id" integer NOT NULL, "body" text NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "title" varchar /*application='Recall'*/, CONSTRAINT "fk_rails_3c0482b265"
 FOREIGN KEY ("session_id")
   REFERENCES "sessions" ("id")
 );
 CREATE INDEX "index_session_summaries_on_session_id" ON "session_summaries" ("session_id") /*application='Recall'*/;
 INSERT INTO "schema_migrations" (version) VALUES
+('20260404213502'),
 ('20260404213006'),
 ('20260402174821'),
 ('20260402172727'),

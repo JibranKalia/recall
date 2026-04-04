@@ -15,7 +15,7 @@ class SessionsController < ApplicationController
 
   def regenerate_title
     @session = Session.find(params[:id])
-    GenerateTitleJob.perform_later(@session)
+    GenerateSummaryJob.perform_later(@session)
     redirect_to @session
   end
 end

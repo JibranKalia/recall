@@ -29,17 +29,18 @@ namespace :recall do
     batch_size = (ENV["BATCH_SIZE"] || 50).to_i
     sessions = Session.where(custom_title: nil).order(started_at: :desc).limit(batch_size)
     count = sessions.count
-    sessions.each { |s| GenerateTitleJob.perform_later(s) }
+    sessions.each { |s| GenerateSummaryJob.perform_later(s) }
     puts "Enqueued #{count} title generation jobs."
   end
 
   desc "Regenerate all session titles (enqueues background jobs)"
   task regenerate_titles: :environment do
     batch_size = (ENV["BATCH_SIZE"] || 50).to_i
-    Session.where.not(custom_title: nil).update_all(custom_title: nil, summary: nil)
+    Session.where.not(custom_title: nil).update_all(custom_title: nil)
+    Session::Summary.delete_all
     sessions = Session.where(custom_title: nil).order(started_at: :desc).limit(batch_size)
     count = sessions.count
-    sessions.each { |s| GenerateTitleJob.perform_later(s) }
+    sessions.each { |s| GenerateSummaryJob.perform_later(s) }
     puts "Enqueued #{count} title generation jobs."
   end
 
