@@ -146,7 +146,7 @@ module Recall
       end
 
       def generate_title(session)
-        GenerateTitleJob.perform_later(session)
+        GenerateSummaryJob.perform_later(session)
       end
 
       def log_stats
