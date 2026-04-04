@@ -1,6 +1,7 @@
 class Session < ApplicationRecord
   belongs_to :project, counter_cache: true
   has_many :messages, dependent: :destroy
+  has_many :summaries, dependent: :destroy
 
   validates :external_id, presence: true, uniqueness: { scope: :source_type }
   validates :source_name, presence: true
@@ -9,7 +10,7 @@ class Session < ApplicationRecord
   validates :source_checksum, presence: true
   validates :source_size, presence: true
 
-  after_save :sync_fts, if: -> { saved_change_to_title? || saved_change_to_custom_title? || saved_change_to_summary? }
+  after_save :sync_fts, if: -> { saved_change_to_title? || saved_change_to_custom_title? }
   after_destroy :remove_from_fts
 
   scope :recent, -> { order(ended_at: :desc) }
@@ -27,6 +28,10 @@ class Session < ApplicationRecord
 
   def total_tokens
     (total_input_tokens || 0) + (total_output_tokens || 0)
+  end
+
+  def latest_summary
+    summaries.order(created_at: :desc).first
   end
 
   def to_markdown(thinking: false, tool_details: false)

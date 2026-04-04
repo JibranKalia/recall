@@ -1,3 +1,4 @@
+<%= turbo_stream_from @session %>
 <div data-controller="sticky-header">
   <div class="session-header" data-sticky-header-target="header">
     <%= link_to project_path(@session.project), class: "back-link" do %>
@@ -5,7 +6,7 @@
     <% end %>
 
     <div class="session-title-row">
-      <h1 class="session-title"><%= @session.display_title %></h1>
+      <%= tag.h1 @session.display_title, class: "session-title", id: "session_title" %>
       <form action="<%= regenerate_title_session_path(@session) %>" method="post" data-controller="pending-btn" data-action="submit->pending-btn#submit">
         <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
         <button type="submit" class="regenerate-title-btn" data-pending-btn-target="btn" title="Regenerate title">↻</button>
@@ -24,9 +25,9 @@
       <% end %>
     </div>
 
-    <% if @session.summary.present? %>
-      <div class="session-summary prose"><%= render_markdown @session.summary %></div>
-    <% end %>
+    <div id="session_summary">
+      <%= render "sessions/summary", session: @session %>
+    </div>
   </div>
 
   <div class="session-actions-row">
@@ -61,23 +62,31 @@
 
 <div class="message-list" data-controller="code-copy">
   <% @messages.each do |message| %>
-    <div id="msg-<%= message.id %>" class="message <%= message_css_class(message) %>">
+    <div id="msg-<%= message.id %>" class="message <%= message_css_class(message) %>" data-controller="message-copy">
       <% if message.role == "user" %>
         <div class="message-header">
           <span class="message-role-label role-label-user">You</span>
           <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>
+          <button class="msg-copy-btn" data-action="click->message-copy#copy" title="Copy message">
+            <span data-message-copy-target="icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h2.5"/></svg></span>
+          </button>
         </div>
       <% elsif message.role == "assistant" && assistant_has_text?(message) %>
         <div class="message-header">
           <span class="message-role-label role-label-assistant">Assistant</span>
           <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>
+          <button class="msg-copy-btn" data-action="click->message-copy#copy" title="Copy message">
+            <span data-message-copy-target="icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h2.5"/></svg></span>
+          </button>
           <% if message.model.present? %>
             <span class="message-model-tag message-model-right"><%= message.model %></span>
           <% end %>
         </div>
       <% end %>
 
-      <%= render_message_content(message) %>
+      <div data-message-copy-target="content">
+        <%= render_message_content(message) %>
+      </div>
     </div>
   <% end %>
 </div>
