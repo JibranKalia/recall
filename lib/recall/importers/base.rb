@@ -100,11 +100,20 @@ module Recall
           total_output_tokens: session_attrs[:total_output_tokens]
         )
 
-        existing_ids = session.messages.pluck(:external_id).to_set
-        new_messages = extract_messages(entries).reject { |m| existing_ids.include?(m[:external_id]) }
-        insert_messages(session, new_messages)
+        all_messages = extract_messages(entries)
+        existing_ids = session.messages.pluck(:external_id).compact.to_set
+
+        if existing_ids.empty?
+          # No usable external_ids (e.g. Codex) — replace all messages
+          session.messages.delete_all
+          insert_messages(session, all_messages)
+        else
+          new_messages = all_messages.reject { |m| m[:external_id] && existing_ids.include?(m[:external_id]) }
+          insert_messages(session, new_messages)
+        end
+
         update_session_timestamps(session)
-        generate_title(session) if new_messages.any?
+        generate_title(session) if all_messages.size > session.messages.count
       end
 
       def insert_messages(session, messages)
@@ -140,7 +149,7 @@ module Recall
       def find_or_create_project(cwd)
         path = cwd || "unknown"
         name = File.basename(path)
-        Project.find_or_create_by!(path: path, source_type: source_type) do |p|
+        Project.find_or_create_by!(path: path) do |p|
           p.name = name
         end
       end

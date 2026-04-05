@@ -2,7 +2,7 @@
 
 <div class="project-header">
   <div class="project-name"><%= @project.display_name %></div>
-  <div class="project-path"><%= @project.path %> &middot; <%= @project.source_type.titleize %></div>
+  <div class="project-path"><%= @project.path %></div>
 </div>
 
 <div data-controller="search" data-search-url-value="<%= project_path(@project) %>">

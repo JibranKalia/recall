@@ -26,9 +26,11 @@
         <div class="project-card-path"><%= project.path %></div>
         <div class="project-card-footer">
           <span class="project-card-sessions"><strong><%= project.sessions_count %></strong> sessions</span>
-          <span class="source-badge source-badge-<%= project.source_type == 'claude_code' ? 'claude' : 'codex' %>">
-            <%= project.source_type.titleize %>
-          </span>
+          <% (project.try(:source_types_csv)&.split(",") || project.source_types).each do |st| %>
+            <span class="source-badge source-badge-<%= st == 'claude_code' ? 'claude' : 'codex' %>">
+              <%= st.titleize %>
+            </span>
+          <% end %>
         </div>
       <% end %>
     <% end %>
