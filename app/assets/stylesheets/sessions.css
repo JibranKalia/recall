@@ -39,6 +39,7 @@
 }
 
 .session-card-meta-divider { color: var(--text-dim); }
+.session-card-cost { color: var(--green); }
 
 .session-card-date {
   font-family: var(--font-mono);
@@ -182,6 +183,12 @@
   color: var(--blue);
   background: var(--blue-dim);
   border-color: rgba(37, 99, 235, 0.2);
+}
+
+.session-meta-tag--cost {
+  color: var(--green);
+  background: var(--green-dim);
+  border-color: rgba(0, 166, 126, 0.2);
 }
 
 /* ── Actions Row ── */

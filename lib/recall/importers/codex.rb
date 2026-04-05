@@ -84,11 +84,13 @@ module Recall
               tc = token_counts[idx]
               if tc
                 last_usage = tc["last_token_usage"] || {}
+                total_input = last_usage["input_tokens"].to_i
+                cached_input = last_usage["cached_input_tokens"].to_i
                 msg[:token_usage] = {
-                  input_tokens: last_usage["input_tokens"].to_i,
+                  input_tokens: total_input - cached_input,
                   output_tokens: last_usage["output_tokens"].to_i,
                   cache_creation_input_tokens: 0,
-                  cache_read_input_tokens: last_usage["cached_input_tokens"].to_i,
+                  cache_read_input_tokens: cached_input,
                   model: codex_model
                 }
               end

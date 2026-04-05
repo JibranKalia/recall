@@ -23,6 +23,9 @@
       <% if @session.total_tokens > 0 %>
         <span class="session-meta-tag"><%= number_with_delimiter(@session.total_tokens) %> tokens</span>
       <% end %>
+      <% if @session.estimated_cost_formatted %>
+        <span class="session-meta-tag session-meta-tag--cost"><%= @session.estimated_cost_formatted %></span>
+      <% end %>
     </div>
 
     <div id="session_summary">

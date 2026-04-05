@@ -30,7 +30,13 @@ class Session < ApplicationRecord
   end
 
   def estimated_cost
-    token_usages.sum { |tu| tu.estimated_cost || 0 }
+    @estimated_cost ||= token_usages.sum { |tu| tu.estimated_cost || 0 }
+  end
+
+  def estimated_cost_formatted
+    cost = estimated_cost
+    return nil if cost.zero?
+    "$#{'%.2f' % cost}"
   end
 
   def latest_summary

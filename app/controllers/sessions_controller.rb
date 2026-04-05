@@ -1,7 +1,7 @@
 class SessionsController < ApplicationController
   def show
-    @session = Session.includes(:project, :source).find(params[:id])
-    @messages = @session.messages.includes(:content).ordered
+    @session = Session.includes(:project, :source, messages: [:content, :token_usage]).find(params[:id])
+    @messages = @session.messages.sort_by(&:position)
   end
 
   def markdown

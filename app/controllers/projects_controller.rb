@@ -38,6 +38,6 @@ class ProjectsController < ApplicationController
       end
     end
 
-    @sessions = @project.sessions.recent.page(params[:page])
+    @sessions = @project.sessions.includes(:token_usages).recent.page(params[:page])
   end
 end
