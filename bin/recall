@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
 require_relative "../config/environment"
 
 class RecallCLI
@@ -19,6 +20,8 @@ class RecallCLI
       projects
     when "sessions"
       sessions
+    when "show"
+      show
     else
       usage
     end
@@ -119,6 +122,112 @@ class RecallCLI
     end
   end
 
+  def show
+    identifier = @args.first
+    if identifier.blank?
+      puts "Usage: recall show <session_id_or_url>"
+      return
+    end
+
+    # Extract numeric ID from URL or use directly
+    session_id = identifier[%r{/sessions/(\d+)}, 1] || identifier
+    session = Session.find_by(id: session_id)
+
+    unless session
+      puts "Session not found: #{identifier}"
+      return
+    end
+
+    thinking = @args.include?("--thinking")
+    tools = @args.include?("--tools")
+
+    puts "# #{session.display_title}"
+    puts ""
+    puts "Session ID: #{session.external_id}"
+    puts "Project:    #{session.project&.path}"
+    puts "Started:    #{session.started_at&.strftime('%Y-%m-%d %H:%M:%S')}"
+    puts "Ended:      #{session.ended_at&.strftime('%Y-%m-%d %H:%M:%S')}"
+    puts "Duration:   #{format_duration(session.duration)}" if session.duration
+    puts "Model:      #{session.model}" if session.model.present?
+    puts "Cost:       #{session.estimated_cost_formatted}" if session.estimated_cost_formatted
+    puts ""
+    puts "=" * 80
+    puts ""
+
+    session.messages.ordered.includes(:content).each do |msg|
+      next if msg.role == "system"
+      next if msg.role == "tool_result" && !tools
+
+      ts = msg.timestamp&.strftime("%H:%M:%S") || ""
+      role_label = format_role(msg.role)
+
+      puts "\033[2m[#{ts}]\033[0m #{role_label}"
+      puts ""
+
+      blocks = msg.parsed_content
+      if blocks.is_a?(Array)
+        blocks.each do |block|
+          case block["type"]
+          when "text"
+            next if block["text"].blank?
+            puts block["text"]
+            puts ""
+          when "thinking"
+            next unless thinking
+            puts "\033[2m[thinking] #{block['thinking']&.truncate(500)}\033[0m"
+            puts ""
+          when "tool_use"
+            summary = tool_call_summary(block["name"], block["input"])
+            line = "  \033[33m▶ #{block['name']}\033[0m"
+            line += " #{summary}" if summary.present?
+            puts line
+          end
+        end
+      elsif msg.content_text.present?
+        puts msg.content_text
+        puts ""
+      end
+
+      puts "-" * 80
+      puts ""
+    end
+  end
+
+  def format_role(role)
+    case role
+    when "user"        then "\033[36m## User\033[0m"
+    when "assistant"   then "\033[32m## Assistant\033[0m"
+    when "tool_result" then "\033[33m## Tool Result\033[0m"
+    else role
+    end
+  end
+
+  def format_duration(seconds)
+    return nil unless seconds
+    hours = (seconds / 3600).to_i
+    mins = ((seconds % 3600) / 60).to_i
+    secs = (seconds % 60).to_i
+    if hours > 0
+      "#{hours}h #{mins}m #{secs}s"
+    elsif mins > 0
+      "#{mins}m #{secs}s"
+    else
+      "#{secs}s"
+    end
+  end
+
+  def tool_call_summary(name, input)
+    case name
+    when "Bash" then input&.dig("command")&.truncate(120)
+    when "Read", "Write", "Edit" then input&.dig("file_path")
+    when "Glob" then input&.dig("pattern")
+    when "Grep" then input&.dig("pattern")
+    when "Agent" then input&.dig("description") || input&.dig("prompt")&.truncate(80)
+    when "WebSearch" then input&.dig("query")
+    when "WebFetch" then input&.dig("url")&.truncate(80)
+    end
+  end
+
   def usage
     puts <<~USAGE
       Usage: recall <command> [options]
@@ -134,6 +243,9 @@ class RecallCLI
         stats             Show counts by source
         projects          List all projects
         sessions [NAME]   List recent sessions (optionally filter by project)
+        show <id|url>     Show full session transcript with timestamps
+                          --thinking       Include thinking blocks
+                          --tools          Include tool results
     USAGE
   end
 
