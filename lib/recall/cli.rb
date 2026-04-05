@@ -150,17 +150,22 @@ class RecallCLI
       scope = scope.where("sessions.started_at <= ?", cst.parse(@options[:to]).end_of_day)
     end
 
+    puts "  #{'ID'.ljust(6)} #{'Date'.ljust(16)} Title"
+    puts "  #{'—' * 6} #{'—' * 16} #{'—' * 40}"
     scope.limit(limit).each do |s|
       date = s.started_at&.in_time_zone("America/Chicago")&.strftime("%Y-%m-%d %H:%M") || "unknown"
-      puts "  [#{s.source_name}] #{date} | #{s.display_title}"
+      title = s.display_title.gsub(/\s+/, " ").truncate(80)
+      puts "  #{s.id.to_s.ljust(6)} #{date.ljust(16)} #{title}"
     end
   end
 
   def show
     parse_options! do |opts|
       opts.banner = "Usage: recall show <session_id_or_url> [options]"
+      opts.on("--summary", "Show only the AI-generated summary") { @options[:summary] = true }
       opts.on("--thinking", "Include thinking blocks") { @options[:thinking] = true }
-      opts.on("--tools", "Include tool results") { @options[:tools] = true }
+      opts.on("--tools", "Include tool calls and results") { @options[:tools] = true }
+      opts.on("--timestamps", "Show timestamps") { @options[:timestamps] = true }
     end
 
     identifier = @args.first
@@ -179,52 +184,50 @@ class RecallCLI
 
     puts "# #{session.display_title}"
     puts ""
-    puts "Session ID: #{session.external_id}"
-    puts "Project:    #{session.project&.path}"
-    puts "Started:    #{session.started_at&.in_time_zone('America/Chicago')&.strftime('%Y-%m-%d %H:%M:%S %Z')}"
-    puts "Ended:      #{session.ended_at&.in_time_zone('America/Chicago')&.strftime('%Y-%m-%d %H:%M:%S %Z')}"
-    puts "Duration:   #{format_duration(session.duration)}" if session.duration
-    puts "Model:      #{session.model}" if session.model.present?
-    puts "Cost:       #{session.estimated_cost_formatted}" if session.estimated_cost_formatted
-    puts ""
-    puts "=" * 80
-    puts ""
+
+    if @options[:summary]
+      summary = session.summaries.last
+      if summary
+        puts summary.body
+      else
+        puts "No summary available for this session."
+      end
+      return
+    end
 
     session.messages.ordered.includes(:content).each do |msg|
       next if msg.role == "system"
       next if msg.role == "tool_result" && !@options[:tools]
 
-      ts = msg.timestamp&.in_time_zone("America/Chicago")&.strftime("%Y-%m-%d %H:%M:%S") || ""
-      role_label = format_role(msg.role)
-
-      puts "\033[2m[#{ts}]\033[0m #{role_label}"
-      puts ""
-
       blocks = msg.parsed_content
+      text_parts = []
+
       if blocks.is_a?(Array)
         blocks.each do |block|
           case block["type"]
           when "text"
-            next if block["text"].blank?
-            puts block["text"]
-            puts ""
+            text_parts << block["text"] if block["text"].present?
           when "thinking"
-            next unless @options[:thinking]
-            puts "\033[2m[thinking] #{block['thinking']&.truncate(500)}\033[0m"
-            puts ""
+            text_parts << "[thinking] #{block['thinking']&.truncate(500)}" if @options[:thinking]
           when "tool_use"
-            summary = tool_call_summary(block["name"], block["input"])
-            line = "  \033[33m▶ #{block['name']}\033[0m"
-            line += " #{summary}" if summary.present?
-            puts line
+            if @options[:tools]
+              summary = tool_call_summary(block["name"], block["input"])
+              line = "▶ #{block['name']}"
+              line += " #{summary}" if summary.present?
+              text_parts << line
+            end
           end
         end
-      elsif msg.content_text.present?
-        puts msg.content_text
-        puts ""
+      else
+        text_parts << msg.content_text if msg.content_text.present?
       end
 
-      puts "-" * 80
+      next if text_parts.empty?
+
+      role = msg.role == "user" ? "User" : "Assistant"
+      ts = @options[:timestamps] ? " (#{msg.timestamp&.in_time_zone('America/Chicago')&.strftime('%Y-%m-%d %H:%M')})" : ""
+      puts "## #{role}#{ts}"
+      puts text_parts.join("\n")
       puts ""
     end
   end
