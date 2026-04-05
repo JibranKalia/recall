@@ -1,8 +1,8 @@
 class ProjectsController < ApplicationController
   def index
     @projects = Project
-      .joins(:sessions)
-      .select("projects.*, MAX(sessions.ended_at) AS latest_session_at, GROUP_CONCAT(DISTINCT sessions.source_type) AS source_types_csv")
+      .joins(sessions: :source)
+      .select("projects.*, MAX(sessions.ended_at) AS latest_session_at, GROUP_CONCAT(DISTINCT session_sources.source_type) AS source_types_csv")
       .group("projects.id")
       .order("latest_session_at DESC")
 
@@ -10,7 +10,7 @@ class ProjectsController < ApplicationController
     if @query.present?
       @results = Message.search(@query, limit: 50)
       @sessions_by_id = Session.where(id: @results.map(&:session_id).uniq)
-        .includes(:project)
+        .includes(:project, :source)
         .index_by(&:id)
 
       if request.xhr?
@@ -29,7 +29,7 @@ class ProjectsController < ApplicationController
     if @query.present?
       @results = Message.search(@query, limit: 50, project_id: @project.id)
       @sessions_by_id = Session.where(id: @results.map(&:session_id).uniq)
-        .includes(:project)
+        .includes(:project, :source)
         .index_by(&:id)
 
       if request.xhr?

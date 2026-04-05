@@ -43,7 +43,7 @@ class RecallCLI
     if source || project
       session_ids = results.map(&:session_id).uniq
       sessions = Session.where(id: session_ids).includes(:project)
-      sessions = sessions.where(source_name: source) if source
+      sessions = sessions.joins(:source).where(session_sources: { source_name: source }) if source
       sessions = sessions.joins(:project).where(projects: { name: project }) if project
       allowed_ids = sessions.pluck(:id).to_set
       results = results.select { |m| allowed_ids.include?(m.session_id) }
@@ -95,15 +95,16 @@ class RecallCLI
   def stats
     puts "Recall Stats"
     puts "-" * 40
-    Session.group(:source_name).count.each do |source, count|
+    Session::Source.group(:source_name).count.each do |source, count|
       puts "  #{source}: #{count} sessions"
     end
     puts "  Total: #{Session.count} sessions, #{Message.count} messages"
   end
 
   def projects
-    Project.order(:source_type, :name).each do |p|
-      puts "  #{p.name} (#{p.source_type}) — #{p.sessions_count} sessions"
+    Project.order(:name).each do |p|
+      types = p.source_types.join(", ")
+      puts "  #{p.name} (#{types}) — #{p.sessions_count} sessions"
     end
   end
 

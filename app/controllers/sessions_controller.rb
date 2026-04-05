@@ -1,6 +1,6 @@
 class SessionsController < ApplicationController
   def show
-    @session = Session.includes(:project).find(params[:id])
+    @session = Session.includes(:project, :source).find(params[:id])
     @messages = @session.messages.ordered
   end
 

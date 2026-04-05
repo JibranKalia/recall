@@ -37,9 +37,13 @@ module Recall
         raise NotImplementedError
       end
 
+      def find_session_by_source_path(path)
+        Session.joins(:source).find_by(session_sources: { source_path: path })
+      end
+
       def import_if_changed(path)
         size = File.size(path)
-        existing = Session.find_by(source_path: path)
+        existing = find_session_by_source_path(path)
 
         if existing && existing.source_size == size
           checksum = Digest::SHA256.file(path).hexdigest
@@ -59,7 +63,7 @@ module Recall
         checksum = Digest::SHA256.file(path).hexdigest
         size = File.size(path)
 
-        existing = Session.find_by(source_path: path)
+        existing = find_session_by_source_path(path)
         unless force
           if existing&.source_checksum == checksum
             @stats[:skipped] += 1
@@ -84,7 +88,9 @@ module Recall
 
       def create_session(entries, session_attrs)
         project = find_or_create_project(session_attrs[:cwd])
-        session = project.sessions.create!(session_attrs.except(:cwd))
+        source_attrs = session_attrs.slice(:source_name, :source_type, :source_path, :source_checksum, :source_size)
+        session = project.sessions.create!(session_attrs.except(:cwd, :source_name, :source_type, :source_path, :source_checksum, :source_size))
+        session.create_source!(source_attrs)
         insert_messages(session, extract_messages(entries))
         update_session_timestamps(session)
         generate_title(session)
@@ -92,12 +98,15 @@ module Recall
 
       def update_session(session, entries, session_attrs, checksum, size)
         session.update!(
-          source_checksum: checksum,
-          source_size: size,
           title: session_attrs[:title],
           model: session_attrs[:model],
           total_input_tokens: session_attrs[:total_input_tokens],
           total_output_tokens: session_attrs[:total_output_tokens]
+        )
+
+        session.source.update!(
+          source_checksum: checksum,
+          source_size: size
         )
 
         all_messages = extract_messages(entries)

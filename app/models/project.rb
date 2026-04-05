@@ -6,7 +6,7 @@ class Project < ApplicationRecord
   scope :recent, -> { order(updated_at: :desc) }
 
   def source_types
-    sessions.distinct.pluck(:source_type)
+    Session::Source.where(session_id: session_ids).distinct.pluck(:source_type)
   end
 
   def display_name

@@ -48,14 +48,15 @@ namespace :recall do
   task stats: :environment do
     puts "Recall Stats"
     puts "-" * 40
-    Session.group(:source_name).count.each do |source, count|
+    Session::Source.group(:source_name).count.each do |source, count|
       puts "  #{source}: #{count} sessions"
     end
     puts "  Total: #{Session.count} sessions, #{Message.count} messages"
     puts ""
     puts "Projects: #{Project.count}"
-    Project.includes(:sessions).order(:name).each do |project|
-      puts "  #{project.name} (#{project.source_type}) — #{project.sessions_count} sessions"
+    Project.order(:name).each do |project|
+      types = project.source_types.join(", ")
+      puts "  #{project.name} (#{types}) — #{project.sessions_count} sessions"
     end
   end
 end

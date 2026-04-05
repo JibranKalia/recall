@@ -1,12 +1,5 @@
 CREATE TABLE IF NOT EXISTS "schema_migrations" ("version" varchar NOT NULL PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS "ar_internal_metadata" ("key" varchar NOT NULL PRIMARY KEY, "value" varchar, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
-CREATE TABLE IF NOT EXISTS "sessions" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "project_id" integer NOT NULL, "external_id" varchar NOT NULL, "source_name" varchar NOT NULL, "source_type" varchar NOT NULL, "source_path" varchar NOT NULL, "source_checksum" varchar NOT NULL, "source_size" integer NOT NULL, "title" varchar, "model" varchar, "git_branch" varchar, "cwd" varchar, "started_at" datetime(6), "ended_at" datetime(6), "messages_count" integer DEFAULT 0 NOT NULL, "total_input_tokens" integer DEFAULT 0, "total_output_tokens" integer DEFAULT 0, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "custom_title" varchar /*application='Recall'*/, "summary" text /*application='Recall'*/, CONSTRAINT "fk_rails_788eded806"
-FOREIGN KEY ("project_id")
-  REFERENCES "projects" ("id")
-);
-CREATE INDEX "index_sessions_on_project_id" ON "sessions" ("project_id") /*application='Recall'*/;
-CREATE UNIQUE INDEX "index_sessions_on_external_id_and_source_type" ON "sessions" ("external_id", "source_type") /*application='Recall'*/;
-CREATE INDEX "index_sessions_on_started_at" ON "sessions" ("started_at") /*application='Recall'*/;
 CREATE TABLE IF NOT EXISTS "messages" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "session_id" integer NOT NULL, "external_id" varchar, "parent_external_id" varchar, "role" varchar NOT NULL, "position" integer NOT NULL, "content_text" text, "content_json" text, "model" varchar, "input_tokens" integer, "output_tokens" integer, "timestamp" datetime(6), "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "hidden" boolean DEFAULT FALSE NOT NULL /*application='Recall'*/, CONSTRAINT "fk_rails_1ee2a92df0"
 FOREIGN KEY ("session_id")
   REFERENCES "sessions" ("id")
@@ -49,9 +42,22 @@ FOREIGN KEY ("message_id")
   REFERENCES "messages" ("id")
 );
 CREATE UNIQUE INDEX "index_token_usages_on_message_id" ON "token_usages" ("message_id") /*application='Recall'*/;
+CREATE TABLE IF NOT EXISTS "session_sources" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "session_id" integer NOT NULL, "source_name" varchar NOT NULL, "source_type" varchar NOT NULL, "source_path" varchar NOT NULL, "source_checksum" varchar NOT NULL, "source_size" integer NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_42c2654726"
+FOREIGN KEY ("session_id")
+  REFERENCES "sessions" ("id")
+);
+CREATE UNIQUE INDEX "index_session_sources_on_session_id" ON "session_sources" ("session_id") /*application='Recall'*/;
+CREATE TABLE IF NOT EXISTS "sessions" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "project_id" integer NOT NULL, "external_id" varchar NOT NULL, "title" varchar, "model" varchar, "git_branch" varchar, "cwd" varchar, "started_at" datetime(6), "ended_at" datetime(6), "messages_count" integer DEFAULT 0 NOT NULL, "total_input_tokens" integer DEFAULT 0, "total_output_tokens" integer DEFAULT 0, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "custom_title" varchar, "summary" text, CONSTRAINT "fk_rails_788eded806"
+FOREIGN KEY ("project_id")
+  REFERENCES "projects" ("id")
+);
+CREATE INDEX "index_sessions_on_project_id" ON "sessions" ("project_id") /*application='Recall'*/;
+CREATE INDEX "index_sessions_on_started_at" ON "sessions" ("started_at") /*application='Recall'*/;
+CREATE UNIQUE INDEX "index_sessions_on_external_id" ON "sessions" ("external_id") /*application='Recall'*/;
 INSERT INTO "schema_migrations" (version) VALUES
 ('20260405013407'),
 ('20260405012247'),
+('20260404231000'),
 ('20260404230000'),
 ('20260404213502'),
 ('20260404213006'),
