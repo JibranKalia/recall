@@ -37,7 +37,7 @@
         </div>
       </div>
       <div class="session-card-date">
-        <%= session.started_at&.strftime("%b %d &middot; %H:%M").html_safe %>
+        <%= session.ended_at&.strftime("%b %d &middot; %H:%M")&.html_safe || session.started_at&.strftime("%b %d &middot; %H:%M")&.html_safe %>
       </div>
     <% end %>
   <% end %>

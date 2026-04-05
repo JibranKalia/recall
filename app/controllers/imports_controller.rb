@@ -1,8 +1,7 @@
 class ImportsController < ApplicationController
-  skip_forgery_protection only: :create
-
   def create
-    Recall::Importer.import_all
+    ImportJob.perform_later
+
     head :ok
   end
 end

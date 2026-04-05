@@ -1,0 +1,6 @@
+<form id="import_btn" action="<%= import_path %>" method="post" data-controller="pending-btn" data-action="submit->pending-btn#submit">
+  <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+  <button type="submit" class="nav-refresh" data-pending-btn-target="btn" title="Import conversations">
+    <span class="nav-refresh-icon">&#x21bb;</span>
+  </button>
+</form>
