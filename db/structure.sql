@@ -18,7 +18,7 @@ FOREIGN KEY ("session_id")
   REFERENCES "sessions" ("id")
 );
 CREATE INDEX "index_session_summaries_on_session_id" ON "session_summaries" ("session_id") /*application='Recall'*/;
-CREATE TABLE IF NOT EXISTS "projects" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "name" varchar NOT NULL, "path" varchar NOT NULL, "sessions_count" integer DEFAULT 0 NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
+CREATE TABLE IF NOT EXISTS "projects" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "name" varchar NOT NULL, "path" varchar NOT NULL, "sessions_count" integer DEFAULT 0 NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "domain" varchar DEFAULT 'personal' NOT NULL /*application='Recall'*/);
 CREATE UNIQUE INDEX "index_projects_on_path" ON "projects" ("path") /*application='Recall'*/;
 CREATE TABLE IF NOT EXISTS "token_usages" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "message_id" integer NOT NULL, "input_tokens" integer DEFAULT 0 NOT NULL, "output_tokens" integer DEFAULT 0 NOT NULL, "cache_creation_input_tokens" integer DEFAULT 0 NOT NULL, "cache_read_input_tokens" integer DEFAULT 0 NOT NULL, "model" varchar, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_003a7b46d9"
 FOREIGN KEY ("message_id")
@@ -64,6 +64,7 @@ CREATE TRIGGER message_contents_ai AFTER INSERT ON message_contents BEGIN
   VALUES (new.message_id, new.content_text);
 END;
 INSERT INTO "schema_migrations" (version) VALUES
+('20260405223110'),
 ('20260405013407'),
 ('20260405012247'),
 ('20260404232000'),

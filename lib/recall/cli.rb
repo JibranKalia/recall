@@ -1,9 +1,11 @@
+require "optparse"
 require_relative "../../config/environment"
 
 class RecallCLI
   def initialize(args)
     @command = args.shift
     @args = args
+    @options = {}
   end
 
   def run
@@ -28,18 +30,24 @@ class RecallCLI
   private
 
   def search
-    query = @args.reject { |a| a.start_with?("--") }.join(" ")
+    parse_options! do |opts|
+      opts.banner = "Usage: recall search \"query\" [options]"
+      opts.on("--source NAME", "Filter by source (claude, claude_work, codex)") { |v| @options[:source] = v }
+      opts.on("--project NAME", "Filter by project name") { |v| @options[:project] = v }
+      opts.on("--limit N", Integer, "Max results (default 20)") { |v| @options[:limit] = v }
+    end
+
+    query = @args.join(" ")
     if query.blank?
-      puts "Usage: recall search \"query\" [--source NAME] [--project NAME] [--limit N]"
+      puts @parser
       return
     end
 
-    limit = option_value("--limit")&.to_i || 20
+    limit = @options[:limit] || 20
     results = Message.search(query, limit: limit)
 
-    # Filter by source/project if specified
-    source = option_value("--source")
-    project = option_value("--project")
+    source = @options[:source]
+    project = @options[:project]
 
     if source || project
       session_ids = results.map(&:session_id).uniq
@@ -55,7 +63,6 @@ class RecallCLI
       return
     end
 
-    # Preload sessions and projects
     session_map = Session.where(id: results.map(&:session_id).uniq).includes(:project).index_by(&:id)
 
     results.each do |msg|
@@ -70,7 +77,6 @@ class RecallCLI
       puts "  > #{session.display_title}"
       snippet = msg.respond_to?(:snippet) ? msg.snippet : msg.content_text&.truncate(200)
       if snippet
-        # Convert <mark> to terminal bold
         formatted = snippet.gsub("<mark>", "\033[1m").gsub("</mark>", "\033[0m")
         puts "  #{formatted}"
       end
@@ -81,13 +87,16 @@ class RecallCLI
   end
 
   def import
-    force = @args.include?("--force")
-    source = option_value("--source")
+    parse_options! do |opts|
+      opts.banner = "Usage: recall import [options]"
+      opts.on("--source NAME", "Import only one source") { |v| @options[:source] = v }
+      opts.on("--force", "Re-import everything") { @options[:force] = true }
+    end
 
-    if force
+    if @options[:force]
       Recall::Importer.reimport_all
-    elsif source
-      Recall::Importer.import_source(source)
+    elsif @options[:source]
+      Recall::Importer.import_source(@options[:source])
     else
       Recall::Importer.import_all
     end
@@ -103,31 +112,63 @@ class RecallCLI
   end
 
   def projects
-    Project.order(:name).each do |p|
+    parse_options! do |opts|
+      opts.banner = "Usage: recall projects [options]"
+      opts.on("--domain NAME", Project::DOMAINS, "Filter by domain (#{Project::DOMAINS.join(', ')})") { |v| @options[:domain] = v }
+    end
+
+    scope = Project.order(:name)
+    scope = scope.by_domain(@options[:domain]) if @options[:domain]
+
+    scope.each do |p|
       types = p.source_types.join(", ")
-      puts "  #{p.name} (#{types}) — #{p.sessions_count} sessions"
+      puts "  [#{p.domain}] #{p.name} (#{types}) — #{p.sessions_count} sessions"
     end
   end
 
   def sessions
+    parse_options! do |opts|
+      opts.banner = "Usage: recall sessions [PROJECT_NAME] [options]"
+      opts.on("--domain NAME", Project::DOMAINS, "Filter by domain (#{Project::DOMAINS.join(', ')})") { |v| @options[:domain] = v }
+      opts.on("--from DATE", "Start date in CST (e.g. 2026-04-01)") { |v| @options[:from] = v }
+      opts.on("--to DATE", "End date in CST (e.g. 2026-04-05)") { |v| @options[:to] = v }
+      opts.on("--limit N", Integer, "Max results (default 50)") { |v| @options[:limit] = v }
+    end
+
     project_name = @args.first
+    limit = @options[:limit] || 50
+
     scope = Session.includes(:project).recent
     scope = scope.joins(:project).where(projects: { name: project_name }) if project_name
+    scope = scope.joins(:project).where(projects: { domain: @options[:domain] }) if @options[:domain]
 
-    scope.limit(50).each do |s|
-      date = s.started_at&.strftime("%Y-%m-%d %H:%M") || "unknown"
+    cst = ActiveSupport::TimeZone["America/Chicago"]
+    if @options[:from]
+      scope = scope.where("sessions.started_at >= ?", cst.parse(@options[:from]).beginning_of_day)
+    end
+    if @options[:to]
+      scope = scope.where("sessions.started_at <= ?", cst.parse(@options[:to]).end_of_day)
+    end
+
+    scope.limit(limit).each do |s|
+      date = s.started_at&.in_time_zone("America/Chicago")&.strftime("%Y-%m-%d %H:%M") || "unknown"
       puts "  [#{s.source_name}] #{date} | #{s.display_title}"
     end
   end
 
   def show
+    parse_options! do |opts|
+      opts.banner = "Usage: recall show <session_id_or_url> [options]"
+      opts.on("--thinking", "Include thinking blocks") { @options[:thinking] = true }
+      opts.on("--tools", "Include tool results") { @options[:tools] = true }
+    end
+
     identifier = @args.first
     if identifier.blank?
-      puts "Usage: recall show <session_id_or_url>"
+      puts @parser
       return
     end
 
-    # Extract numeric ID from URL or use directly
     session_id = identifier[%r{/sessions/(\d+)}, 1] || identifier
     session = Session.find_by(id: session_id)
 
@@ -135,9 +176,6 @@ class RecallCLI
       puts "Session not found: #{identifier}"
       return
     end
-
-    thinking = @args.include?("--thinking")
-    tools = @args.include?("--tools")
 
     puts "# #{session.display_title}"
     puts ""
@@ -154,7 +192,7 @@ class RecallCLI
 
     session.messages.ordered.includes(:content).each do |msg|
       next if msg.role == "system"
-      next if msg.role == "tool_result" && !tools
+      next if msg.role == "tool_result" && !@options[:tools]
 
       ts = msg.timestamp&.in_time_zone("America/Chicago")&.strftime("%Y-%m-%d %H:%M:%S") || ""
       role_label = format_role(msg.role)
@@ -171,7 +209,7 @@ class RecallCLI
             puts block["text"]
             puts ""
           when "thinking"
-            next unless thinking
+            next unless @options[:thinking]
             puts "\033[2m[thinking] #{block['thinking']&.truncate(500)}\033[0m"
             puts ""
           when "tool_use"
@@ -226,31 +264,27 @@ class RecallCLI
     end
   end
 
+  def parse_options!
+    @parser = OptionParser.new do |opts|
+      yield opts
+    end
+    @parser.parse!(@args)
+  end
+
   def usage
     puts <<~USAGE
       Usage: recall <command> [options]
 
       Commands:
         search "query"    Full-text search across all conversations
-                          --source NAME    Filter by source (claude, claude_work, codex)
-                          --project NAME   Filter by project name
-                          --limit N        Max results (default 20)
         import            Import/update all sources
-                          --source NAME    Import only one source
-                          --force          Re-import everything
         stats             Show counts by source
         projects          List all projects
         sessions [NAME]   List recent sessions (optionally filter by project)
-        show <id|url>     Show full session transcript with timestamps
-                          --thinking       Include thinking blocks
-                          --tools          Include tool results
-    USAGE
-  end
+        show <id|url>     Show full session transcript
 
-  def option_value(flag)
-    idx = @args.index(flag)
-    return nil unless idx
-    @args[idx + 1]
+      Run `recall <command> --help` for command-specific options.
+    USAGE
   end
 end
 
