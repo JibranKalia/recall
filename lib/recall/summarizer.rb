@@ -57,18 +57,33 @@ module Recall
 
     def initialize(session)
       @session = session
+      @logger = Rails.logger
     end
 
     def generate
-      body = summarize
-      return nil if body.blank?
+      msg_count = @session.messages.count
+      @logger.info "[Summarizer] Starting session #{@session.id} (#{msg_count} messages)"
+      start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
+      body = summarize
+      if body.blank?
+        @logger.warn "[Summarizer] Session #{@session.id}: summarize returned blank"
+        return nil
+      end
+
+      @logger.info "[Summarizer] Session #{@session.id}: generating title..."
       title = generate_title(body)
-      return nil if title.blank?
+      if title.blank?
+        @logger.warn "[Summarizer] Session #{@session.id}: title generation returned blank"
+        return nil
+      end
+
+      elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start).round(1)
+      @logger.info "[Summarizer] Session #{@session.id}: done in #{elapsed}s — \"#{title}\""
 
       @session.summaries.create!(title: title, body: body)
     rescue => e
-      warn "  Summary generation failed for session #{@session.id}: #{e.message}"
+      @logger.error "[Summarizer] Session #{@session.id} failed: #{e.message}"
       nil
     end
 
@@ -79,9 +94,13 @@ module Recall
       return nil if messages.empty?
 
       chunks = messages.each_slice(MESSAGES_PER_CHUNK).to_a
+      total_chunks = chunks.size
+      @logger.info "[Summarizer] Session #{@session.id}: #{messages.size} messages → #{total_chunks} chunks"
       summary_so_far = nil
 
-      chunks.each do |chunk|
+      chunks.each_with_index do |chunk, i|
+        chunk_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
         context_line = if summary_so_far
           "Here is the summary of the conversation so far:\n#{summary_so_far}\n\nNow summarize the next portion. Only add new information."
         else
@@ -92,7 +111,13 @@ module Recall
         formatted = format_messages(chunk)
 
         result = call_ollama(prompt, formatted, num_predict: 500)
-        break unless result
+        unless result
+          @logger.warn "[Summarizer] Session #{@session.id}: chunk #{i + 1}/#{total_chunks} returned nil, stopping"
+          break
+        end
+
+        chunk_elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - chunk_start).round(1)
+        @logger.info "[Summarizer] Session #{@session.id}: chunk #{i + 1}/#{total_chunks} done (#{chunk_elapsed}s, #{chunk.size} msgs)"
 
         summary_so_far = if summary_so_far
           "#{summary_so_far}\n#{result}"
