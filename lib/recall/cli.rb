@@ -1,0 +1,257 @@
+require_relative "../../config/environment"
+
+class RecallCLI
+  def initialize(args)
+    @command = args.shift
+    @args = args
+  end
+
+  def run
+    case @command
+    when "search", "s"
+      search
+    when "import", "i"
+      import
+    when "stats"
+      stats
+    when "projects"
+      projects
+    when "sessions"
+      sessions
+    when "show"
+      show
+    else
+      usage
+    end
+  end
+
+  private
+
+  def search
+    query = @args.reject { |a| a.start_with?("--") }.join(" ")
+    if query.blank?
+      puts "Usage: recall search \"query\" [--source NAME] [--project NAME] [--limit N]"
+      return
+    end
+
+    limit = option_value("--limit")&.to_i || 20
+    results = Message.search(query, limit: limit)
+
+    # Filter by source/project if specified
+    source = option_value("--source")
+    project = option_value("--project")
+
+    if source || project
+      session_ids = results.map(&:session_id).uniq
+      sessions = Session.where(id: session_ids).includes(:project)
+      sessions = sessions.joins(:source).where(session_sources: { source_name: source }) if source
+      sessions = sessions.joins(:project).where(projects: { name: project }) if project
+      allowed_ids = sessions.pluck(:id).to_set
+      results = results.select { |m| allowed_ids.include?(m.session_id) }
+    end
+
+    if results.empty?
+      puts "No results for: #{query}"
+      return
+    end
+
+    # Preload sessions and projects
+    session_map = Session.where(id: results.map(&:session_id).uniq).includes(:project).index_by(&:id)
+
+    results.each do |msg|
+      session = session_map[msg.session_id]
+      next unless session
+
+      date = session.started_at&.strftime("%Y-%m-%d %H:%M") || "unknown"
+      project_name = session.project&.name || "unknown"
+      short_id = session.external_id[0..7]
+
+      puts "\033[36m[#{session.source_name}]\033[0m #{project_name} | #{date} | session #{short_id}"
+      puts "  > #{session.display_title}"
+      snippet = msg.respond_to?(:snippet) ? msg.snippet : msg.content_text&.truncate(200)
+      if snippet
+        # Convert <mark> to terminal bold
+        formatted = snippet.gsub("<mark>", "\033[1m").gsub("</mark>", "\033[0m")
+        puts "  #{formatted}"
+      end
+      puts ""
+    end
+
+    puts "#{results.size} result(s)"
+  end
+
+  def import
+    force = @args.include?("--force")
+    source = option_value("--source")
+
+    if force
+      Recall::Importer.reimport_all
+    elsif source
+      Recall::Importer.import_source(source)
+    else
+      Recall::Importer.import_all
+    end
+  end
+
+  def stats
+    puts "Recall Stats"
+    puts "-" * 40
+    Session::Source.group(:source_name).count.each do |source, count|
+      puts "  #{source}: #{count} sessions"
+    end
+    puts "  Total: #{Session.count} sessions, #{Message.count} messages"
+  end
+
+  def projects
+    Project.order(:name).each do |p|
+      types = p.source_types.join(", ")
+      puts "  #{p.name} (#{types}) — #{p.sessions_count} sessions"
+    end
+  end
+
+  def sessions
+    project_name = @args.first
+    scope = Session.includes(:project).recent
+    scope = scope.joins(:project).where(projects: { name: project_name }) if project_name
+
+    scope.limit(50).each do |s|
+      date = s.started_at&.strftime("%Y-%m-%d %H:%M") || "unknown"
+      puts "  [#{s.source_name}] #{date} | #{s.display_title}"
+    end
+  end
+
+  def show
+    identifier = @args.first
+    if identifier.blank?
+      puts "Usage: recall show <session_id_or_url>"
+      return
+    end
+
+    # Extract numeric ID from URL or use directly
+    session_id = identifier[%r{/sessions/(\d+)}, 1] || identifier
+    session = Session.find_by(id: session_id)
+
+    unless session
+      puts "Session not found: #{identifier}"
+      return
+    end
+
+    thinking = @args.include?("--thinking")
+    tools = @args.include?("--tools")
+
+    puts "# #{session.display_title}"
+    puts ""
+    puts "Session ID: #{session.external_id}"
+    puts "Project:    #{session.project&.path}"
+    puts "Started:    #{session.started_at&.in_time_zone('America/Chicago')&.strftime('%Y-%m-%d %H:%M:%S %Z')}"
+    puts "Ended:      #{session.ended_at&.in_time_zone('America/Chicago')&.strftime('%Y-%m-%d %H:%M:%S %Z')}"
+    puts "Duration:   #{format_duration(session.duration)}" if session.duration
+    puts "Model:      #{session.model}" if session.model.present?
+    puts "Cost:       #{session.estimated_cost_formatted}" if session.estimated_cost_formatted
+    puts ""
+    puts "=" * 80
+    puts ""
+
+    session.messages.ordered.includes(:content).each do |msg|
+      next if msg.role == "system"
+      next if msg.role == "tool_result" && !tools
+
+      ts = msg.timestamp&.in_time_zone("America/Chicago")&.strftime("%Y-%m-%d %H:%M:%S") || ""
+      role_label = format_role(msg.role)
+
+      puts "\033[2m[#{ts}]\033[0m #{role_label}"
+      puts ""
+
+      blocks = msg.parsed_content
+      if blocks.is_a?(Array)
+        blocks.each do |block|
+          case block["type"]
+          when "text"
+            next if block["text"].blank?
+            puts block["text"]
+            puts ""
+          when "thinking"
+            next unless thinking
+            puts "\033[2m[thinking] #{block['thinking']&.truncate(500)}\033[0m"
+            puts ""
+          when "tool_use"
+            summary = tool_call_summary(block["name"], block["input"])
+            line = "  \033[33m▶ #{block['name']}\033[0m"
+            line += " #{summary}" if summary.present?
+            puts line
+          end
+        end
+      elsif msg.content_text.present?
+        puts msg.content_text
+        puts ""
+      end
+
+      puts "-" * 80
+      puts ""
+    end
+  end
+
+  def format_role(role)
+    case role
+    when "user"        then "\033[36m## User\033[0m"
+    when "assistant"   then "\033[32m## Assistant\033[0m"
+    when "tool_result" then "\033[33m## Tool Result\033[0m"
+    else role
+    end
+  end
+
+  def format_duration(seconds)
+    return nil unless seconds
+    hours = (seconds / 3600).to_i
+    mins = ((seconds % 3600) / 60).to_i
+    secs = (seconds % 60).to_i
+    if hours > 0
+      "#{hours}h #{mins}m #{secs}s"
+    elsif mins > 0
+      "#{mins}m #{secs}s"
+    else
+      "#{secs}s"
+    end
+  end
+
+  def tool_call_summary(name, input)
+    case name
+    when "Bash" then input&.dig("command")&.truncate(120)
+    when "Read", "Write", "Edit" then input&.dig("file_path")
+    when "Glob" then input&.dig("pattern")
+    when "Grep" then input&.dig("pattern")
+    when "Agent" then input&.dig("description") || input&.dig("prompt")&.truncate(80)
+    when "WebSearch" then input&.dig("query")
+    when "WebFetch" then input&.dig("url")&.truncate(80)
+    end
+  end
+
+  def usage
+    puts <<~USAGE
+      Usage: recall <command> [options]
+
+      Commands:
+        search "query"    Full-text search across all conversations
+                          --source NAME    Filter by source (claude, claude_work, codex)
+                          --project NAME   Filter by project name
+                          --limit N        Max results (default 20)
+        import            Import/update all sources
+                          --source NAME    Import only one source
+                          --force          Re-import everything
+        stats             Show counts by source
+        projects          List all projects
+        sessions [NAME]   List recent sessions (optionally filter by project)
+        show <id|url>     Show full session transcript with timestamps
+                          --thinking       Include thinking blocks
+                          --tools          Include tool results
+    USAGE
+  end
+
+  def option_value(flag)
+    idx = @args.index(flag)
+    return nil unless idx
+    @args[idx + 1]
+  end
+end
+
+RecallCLI.new(ARGV.dup).run
