@@ -76,13 +76,8 @@ module Recall
               messages << msg
               position += 1
             end
-          when "event_msg"
-            msg = extract_event_message(entry, position)
-            if msg
-              messages << msg
-              position += 1
-            end
           end
+          # Skip event_msg — agent_message entries duplicate response_item content
         end
 
         messages
@@ -90,9 +85,23 @@ module Recall
 
       def extract_response_item(entry, position)
         payload = entry["payload"] || {}
+        ptype = payload["type"]
+
+        return nil if ptype == "reasoning"
+
+        case ptype
+        when "message"
+          extract_message_item(payload, entry, position)
+        when "function_call"
+          extract_function_call(payload, entry, position)
+        when "function_call_output"
+          extract_function_call_output(payload, entry, position)
+        end
+      end
+
+      def extract_message_item(payload, entry, position)
         role = normalize_role(payload["role"])
         return nil unless role
-        return nil if payload["type"] == "reasoning"
 
         content = payload["content"]
         return nil unless content.is_a?(Array)
@@ -135,23 +144,49 @@ module Recall
         }
       end
 
-      def extract_event_message(entry, position)
-        payload = entry["payload"] || {}
-        return nil unless payload["type"] == "agent_message"
-        return nil if payload["phase"] == "thinking"
+      def extract_function_call(payload, entry, position)
+        name = payload["name"]
+        args = payload["arguments"]
+        call_id = payload["call_id"]
+        content_text = "[Tool: #{name}]\n#{args}"
 
-        text = payload["message"]
-        return nil if text.blank?
+        # Parse arguments JSON so render_tool_use can display it
+        input = begin
+          JSON.parse(args)
+        rescue
+          { "raw" => args }
+        end
 
         timestamp = entry["timestamp"] ? Time.parse(entry["timestamp"]) : nil
 
         {
-          external_id: nil,
+          external_id: call_id,
           parent_external_id: nil,
           role: "assistant",
           position: position,
-          content_text: text,
-          content_json: [{ "type" => "text", "text" => text, "phase" => payload["phase"] }].to_json,
+          content_text: content_text,
+          content_json: [{ "type" => "tool_use", "name" => name, "input" => input, "call_id" => call_id }].to_json,
+          model: nil,
+          input_tokens: nil,
+          output_tokens: nil,
+          timestamp: timestamp
+        }
+      end
+
+      def extract_function_call_output(payload, entry, position)
+        call_id = payload["call_id"]
+        output = payload["output"].to_s
+        content_text = output.truncate(10_000)
+
+        timestamp = entry["timestamp"] ? Time.parse(entry["timestamp"]) : nil
+
+        {
+          external_id: "#{call_id}_output",
+          parent_external_id: call_id,
+          role: "tool_result",
+          position: position,
+          content_text: content_text,
+          content_json: [{ "type" => "tool_result", "call_id" => call_id, "output" => output }].to_json,
           model: nil,
           input_tokens: nil,
           output_tokens: nil,

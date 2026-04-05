@@ -149,10 +149,10 @@ module ApplicationHelper
 
   def tool_icon(name)
     case name
-    when "Bash" then "$"
-    when "Read" then "R"
-    when "Write" then "W"
-    when "Edit" then "E"
+    when "Bash", "exec_command" then "$"
+    when "Read", "read_file" then "R"
+    when "Write", "write_file" then "W"
+    when "Edit", "apply_diff" then "E"
     when "Glob" then "G"
     when "Grep" then "S"
     when "Agent" then "A"
@@ -165,9 +165,10 @@ module ApplicationHelper
   def tool_use_summary(name, input)
     case name
     when "Bash" then input&.dig("command")&.truncate(120)
-    when "Read" then input&.dig("file_path")
-    when "Write" then input&.dig("file_path")
-    when "Edit" then input&.dig("file_path")
+    when "exec_command" then input&.dig("cmd")&.truncate(120)
+    when "Read", "read_file" then input&.dig("file_path")
+    when "Write", "write_file" then input&.dig("file_path")
+    when "Edit", "apply_diff" then input&.dig("file_path")
     when "Glob" then input&.dig("pattern")
     when "Grep" then input&.dig("pattern")
     when "Agent" then input&.dig("description") || input&.dig("prompt")&.truncate(80)

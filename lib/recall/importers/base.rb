@@ -102,18 +102,22 @@ module Recall
 
         all_messages = extract_messages(entries)
         existing_ids = session.messages.pluck(:external_id).compact.to_set
+        has_nil_ids = all_messages.any? { |m| m[:external_id].nil? }
 
-        if existing_ids.empty?
-          # No usable external_ids (e.g. Codex) — replace all messages
+        if has_nil_ids || existing_ids.empty?
+          # Some messages lack external_ids — replace all to avoid duplicates
+          old_count = session.messages.count
           session.messages.delete_all
           insert_messages(session, all_messages)
+          new_content = all_messages.size != old_count
         else
-          new_messages = all_messages.reject { |m| m[:external_id] && existing_ids.include?(m[:external_id]) }
+          new_messages = all_messages.reject { |m| existing_ids.include?(m[:external_id]) }
           insert_messages(session, new_messages)
+          new_content = new_messages.any?
         end
 
         update_session_timestamps(session)
-        generate_title(session) if all_messages.size > session.messages.count
+        generate_title(session) if new_content
       end
 
       def insert_messages(session, messages)
