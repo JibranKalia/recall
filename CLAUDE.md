@@ -30,12 +30,16 @@ bin/recall search "query"              # CLI search
 
 ## Architecture
 
-**Core models:** Project → Session → Message (each has many of the next). Session also `has_many :summaries` (Session::Summary).
+**Core models:** Project → Session → Message (each has many of the next).
 
-- **Project**: a directory/repo that had conversations. Unique on `(path, source_type)`.
-- **Session**: one conversation, imported from a JSONL file. Unique on `(external_id, source_type)`. Tracks checksum for dedup. Has `title` (auto-generated via Ollama) and `custom_title` (user-set). `display_title` resolves: custom_title → title → "Untitled session".
-- **Message**: single turn in a session. Roles: `user`, `assistant`, `system`, `tool_result`. Stores both `content_text` (plain text for FTS) and `content_json` (structured blocks for rendering).
+- **Project**: a directory/repo that had conversations. Unique on `path`.
+- **Session**: one conversation, imported from a JSONL file. Unique on `external_id`. Has `title` (auto-generated via Ollama) and `custom_title` (user-set). `display_title` resolves: custom_title → title → "Untitled session".
+- **Message**: single turn in a session. Roles: `user`, `assistant`, `system`, `tool_result`.
+- **Message::Content**: stores `content_text` (plain text for FTS) and `content_json` (structured blocks for rendering). One-to-one with Message. Table name is `message_contents`.
+- **Session::Source**: import provenance — `source_name`, `source_type`, `source_path`, `source_checksum`, `source_size`. One-to-one with Session. Table name is `session_sources`.
 - **Session::Summary**: AI-generated summary with `body` and `title`. Table name is `session_summaries`.
+- **Session::Markdown**: non-DB model that renders a session as Markdown. Instantiated via `session.to_markdown`.
+- **TokenUsage**: per-message token breakdown — `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`, `model`. One-to-one with Message. Supports `estimated_cost` via rate card lookup.
 
 **Import pipeline** (`lib/recall/`):
 - `Importer` orchestrates imports from 3 registered sources, rebuilds FTS after each run.
@@ -46,7 +50,7 @@ bin/recall search "query"              # CLI search
 
 **FTS5 search** (`Searchable` concern):
 - Two FTS virtual tables: `messages_fts` (content_text) and `sessions_fts` (title, custom_title, summary).
-- `messages_fts` auto-synced via SQLite triggers on insert/update/delete.
+- `messages_fts` auto-synced via SQLite triggers on `message_contents` insert/update/delete.
 - `sessions_fts` manually synced via `Session#sync_fts` (after_save hook).
 - `Message.search(query)` searches both tables, returns messages with `snippet` attribute.
 

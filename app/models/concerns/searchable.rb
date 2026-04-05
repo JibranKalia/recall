@@ -21,9 +21,11 @@ module Searchable
     def search_messages(match, limit:, project_id: nil)
       if project_id
         sql = <<~SQL
-          SELECT messages.*, snippet(messages_fts, 0, '<mark>', '</mark>', '...', 48) as snippet,
+          SELECT messages.*, mc.content_text, mc.content_json,
+                 snippet(messages_fts, 0, '<mark>', '</mark>', '...', 48) as snippet,
                  'message' as source
           FROM messages
+          JOIN message_contents mc ON mc.message_id = messages.id
           JOIN messages_fts ON messages.id = messages_fts.rowid
           JOIN sessions ON sessions.id = messages.session_id
           WHERE messages_fts MATCH ?
@@ -34,9 +36,11 @@ module Searchable
         find_by_sql([sql, match, project_id, limit])
       else
         sql = <<~SQL
-          SELECT messages.*, snippet(messages_fts, 0, '<mark>', '</mark>', '...', 48) as snippet,
+          SELECT messages.*, mc.content_text, mc.content_json,
+                 snippet(messages_fts, 0, '<mark>', '</mark>', '...', 48) as snippet,
                  'message' as source
           FROM messages
+          JOIN message_contents mc ON mc.message_id = messages.id
           JOIN messages_fts ON messages.id = messages_fts.rowid
           WHERE messages_fts MATCH ?
           ORDER BY messages_fts.rank
@@ -55,10 +59,12 @@ module Searchable
 
       if project_id
         sql = <<~SQL
-          SELECT messages.*, NULL as snippet, 'session' as source
+          SELECT messages.*, mc.content_text, mc.content_json,
+                 NULL as snippet, 'session' as source
           FROM sessions_fts
           JOIN sessions ON sessions.id = sessions_fts.rowid
           JOIN messages ON messages.session_id = sessions.id AND messages.position = 1
+          JOIN message_contents mc ON mc.message_id = messages.id
           WHERE sessions_fts MATCH ?
             AND sessions.project_id = ?
             #{exclude_clause}
@@ -68,10 +74,12 @@ module Searchable
         find_by_sql([sql, match, project_id, limit])
       else
         sql = <<~SQL
-          SELECT messages.*, NULL as snippet, 'session' as source
+          SELECT messages.*, mc.content_text, mc.content_json,
+                 NULL as snippet, 'session' as source
           FROM sessions_fts
           JOIN sessions ON sessions.id = sessions_fts.rowid
           JOIN messages ON messages.session_id = sessions.id AND messages.position = 1
+          JOIN message_contents mc ON mc.message_id = messages.id
           WHERE sessions_fts MATCH ?
             #{exclude_clause}
           ORDER BY sessions_fts.rank

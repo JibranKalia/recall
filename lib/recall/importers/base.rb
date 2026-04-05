@@ -116,7 +116,9 @@ module Recall
         if has_nil_ids || existing_ids.empty?
           # Some messages lack external_ids — replace all to avoid duplicates
           old_count = session.messages.count
-          TokenUsage.where(message_id: session.message_ids).delete_all
+          msg_ids = session.message_ids
+          TokenUsage.where(message_id: msg_ids).delete_all
+          Message::Content.where(message_id: msg_ids).delete_all
           session.messages.delete_all
           insert_messages(session, all_messages)
           new_content = all_messages.size != old_count
@@ -133,16 +135,19 @@ module Recall
 
       def insert_messages(session, messages)
         messages.each do |attrs|
-          if attrs[:content_text]
-            attrs[:content_text] = attrs[:content_text]
+          content_text = attrs.delete(:content_text)
+          content_json = attrs.delete(:content_json)
+          token_usage_attrs = attrs.delete(:token_usage)
+
+          if content_text
+            content_text = content_text
               .encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
               .gsub("\x00", "")
           end
-          token_usage_attrs = attrs.delete(:token_usage)
+
           message = session.messages.create!(attrs)
-          if token_usage_attrs
-            message.create_token_usage!(token_usage_attrs)
-          end
+          message.create_content!(content_text: content_text, content_json: content_json)
+          message.create_token_usage!(token_usage_attrs) if token_usage_attrs
         end
       end
 

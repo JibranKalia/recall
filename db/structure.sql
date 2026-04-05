@@ -1,22 +1,5 @@
 CREATE TABLE IF NOT EXISTS "schema_migrations" ("version" varchar NOT NULL PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS "ar_internal_metadata" ("key" varchar NOT NULL PRIMARY KEY, "value" varchar, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
-CREATE TABLE IF NOT EXISTS "messages" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "session_id" integer NOT NULL, "external_id" varchar, "parent_external_id" varchar, "role" varchar NOT NULL, "position" integer NOT NULL, "content_text" text, "content_json" text, "model" varchar, "input_tokens" integer, "output_tokens" integer, "timestamp" datetime(6), "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "hidden" boolean DEFAULT FALSE NOT NULL /*application='Recall'*/, CONSTRAINT "fk_rails_1ee2a92df0"
-FOREIGN KEY ("session_id")
-  REFERENCES "sessions" ("id")
-);
-CREATE INDEX "index_messages_on_session_id" ON "messages" ("session_id") /*application='Recall'*/;
-CREATE INDEX "index_messages_on_session_id_and_position" ON "messages" ("session_id", "position") /*application='Recall'*/;
-CREATE VIRTUAL TABLE messages_fts USING fts5(
-  content_text,
-  content='messages',
-  content_rowid='id',
-  tokenize='porter unicode61'
-)
-/* messages_fts(content_text) */;
-CREATE TABLE IF NOT EXISTS 'messages_fts_data'(id INTEGER PRIMARY KEY, block BLOB);
-CREATE TABLE IF NOT EXISTS 'messages_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS 'messages_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
-CREATE TABLE IF NOT EXISTS 'messages_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
 CREATE VIRTUAL TABLE sessions_fts USING fts5(
   title,
   custom_title,
@@ -54,9 +37,36 @@ FOREIGN KEY ("project_id")
 CREATE INDEX "index_sessions_on_project_id" ON "sessions" ("project_id") /*application='Recall'*/;
 CREATE INDEX "index_sessions_on_started_at" ON "sessions" ("started_at") /*application='Recall'*/;
 CREATE UNIQUE INDEX "index_sessions_on_external_id" ON "sessions" ("external_id") /*application='Recall'*/;
+CREATE TABLE IF NOT EXISTS "message_contents" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "message_id" integer NOT NULL, "content_text" text, "content_json" text, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_cd506865cb"
+FOREIGN KEY ("message_id")
+  REFERENCES "messages" ("id")
+);
+CREATE UNIQUE INDEX "index_message_contents_on_message_id" ON "message_contents" ("message_id") /*application='Recall'*/;
+CREATE TABLE IF NOT EXISTS "messages" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "session_id" integer NOT NULL, "external_id" varchar, "parent_external_id" varchar, "role" varchar NOT NULL, "position" integer NOT NULL, "model" varchar, "input_tokens" integer, "output_tokens" integer, "timestamp" datetime(6), "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "hidden" boolean DEFAULT FALSE NOT NULL, CONSTRAINT "fk_rails_1ee2a92df0"
+FOREIGN KEY ("session_id")
+  REFERENCES "sessions" ("id")
+);
+CREATE INDEX "index_messages_on_session_id" ON "messages" ("session_id") /*application='Recall'*/;
+CREATE INDEX "index_messages_on_session_id_and_position" ON "messages" ("session_id", "position") /*application='Recall'*/;
+CREATE VIRTUAL TABLE messages_fts USING fts5(
+  content_text,
+  content='message_contents',
+  content_rowid='message_id',
+  tokenize='porter unicode61'
+)
+/* messages_fts(content_text) */;
+CREATE TABLE IF NOT EXISTS 'messages_fts_data'(id INTEGER PRIMARY KEY, block BLOB);
+CREATE TABLE IF NOT EXISTS 'messages_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS 'messages_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
+CREATE TABLE IF NOT EXISTS 'messages_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
+CREATE TRIGGER message_contents_ai AFTER INSERT ON message_contents BEGIN
+  INSERT INTO messages_fts(rowid, content_text)
+  VALUES (new.message_id, new.content_text);
+END;
 INSERT INTO "schema_migrations" (version) VALUES
 ('20260405013407'),
 ('20260405012247'),
+('20260404232000'),
 ('20260404231000'),
 ('20260404230000'),
 ('20260404213502'),

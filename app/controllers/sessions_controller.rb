@@ -1,11 +1,11 @@
 class SessionsController < ApplicationController
   def show
     @session = Session.includes(:project, :source).find(params[:id])
-    @messages = @session.messages.ordered
+    @messages = @session.messages.includes(:content).ordered
   end
 
   def markdown
-    @session = Session.includes(:project, :messages).find(params[:id])
+    @session = Session.includes(:project, messages: :content).find(params[:id])
     options = {
       thinking: params[:thinking] == "1",
       tool_details: params[:tool_details] == "1"

@@ -2,6 +2,7 @@ class Message < ApplicationRecord
   include Searchable
 
   belongs_to :session, counter_cache: true
+  has_one :content, dependent: :destroy
   has_one :token_usage, dependent: :destroy
 
   validates :role, presence: true, inclusion: { in: %w[user assistant system tool_result] }
@@ -9,11 +10,10 @@ class Message < ApplicationRecord
 
   scope :ordered, -> { order(:position) }
 
+  delegate :content_text, :content_json, to: :content, allow_nil: true
+
   def parsed_content
-    return nil if content_json.blank?
-    JSON.parse(content_json)
-  rescue JSON::ParserError
-    nil
+    content&.parsed
   end
 
   def tool_calls

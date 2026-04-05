@@ -90,7 +90,7 @@ module Recall
     private
 
     def summarize
-      messages = @session.messages.where.not(role: "tool_result").order(:position)
+      messages = @session.messages.includes(:content).where.not(role: "tool_result").order(:position)
       return nil if messages.empty?
 
       chunks = messages.each_slice(MESSAGES_PER_CHUNK).to_a
