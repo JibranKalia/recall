@@ -140,7 +140,8 @@ module Recall
           model: nil,
           input_tokens: nil,
           output_tokens: nil,
-          timestamp: timestamp
+          timestamp: timestamp,
+          hidden: boilerplate_message?(role, content_text)
         }
       end
 
@@ -192,6 +193,14 @@ module Recall
           output_tokens: nil,
           timestamp: timestamp
         }
+      end
+
+      # Detect Codex boilerplate: developer system instructions, environment_context, AGENTS.md
+      def boilerplate_message?(role, content_text)
+        return true if role == "system"  # developer instructions are always boilerplate
+        return false unless role == "user"
+        content_text&.start_with?("<environment_context>") ||
+          content_text&.start_with?("# AGENTS.md instructions for")
       end
 
       def normalize_role(role)
