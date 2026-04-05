@@ -1,6 +1,7 @@
 class Session < ApplicationRecord
   belongs_to :project, counter_cache: true
   has_many :messages, dependent: :destroy
+  has_many :token_usages, through: :messages
   has_many :summaries, dependent: :destroy
 
   validates :external_id, presence: true, uniqueness: { scope: :source_type }
@@ -28,6 +29,10 @@ class Session < ApplicationRecord
 
   def total_tokens
     (total_input_tokens || 0) + (total_output_tokens || 0)
+  end
+
+  def estimated_cost
+    token_usages.sum { |tu| tu.estimated_cost || 0 }
   end
 
   def latest_summary

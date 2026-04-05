@@ -100,6 +100,17 @@ module Recall
 
           timestamp = entry["timestamp"] ? Time.parse(entry["timestamp"]) : nil
 
+          usage = message["usage"]
+          token_usage = if usage
+            {
+              input_tokens: usage["input_tokens"].to_i,
+              output_tokens: usage["output_tokens"].to_i,
+              cache_creation_input_tokens: usage["cache_creation_input_tokens"].to_i,
+              cache_read_input_tokens: usage["cache_read_input_tokens"].to_i,
+              model: message["model"]
+            }
+          end
+
           messages << {
             external_id: entry["uuid"],
             parent_external_id: entry["parentUuid"],
@@ -110,7 +121,8 @@ module Recall
             model: message["model"],
             input_tokens: message.dig("usage", "input_tokens"),
             output_tokens: message.dig("usage", "output_tokens"),
-            timestamp: timestamp
+            timestamp: timestamp,
+            token_usage: token_usage
           }
           position += 1
         end

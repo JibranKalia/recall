@@ -107,12 +107,14 @@ module Recall
         if has_nil_ids || existing_ids.empty?
           # Some messages lack external_ids — replace all to avoid duplicates
           old_count = session.messages.count
+          TokenUsage.where(message_id: session.message_ids).delete_all
           session.messages.delete_all
           insert_messages(session, all_messages)
           new_content = all_messages.size != old_count
         else
           new_messages = all_messages.reject { |m| existing_ids.include?(m[:external_id]) }
           insert_messages(session, new_messages)
+          backfill_token_usages(session, all_messages)
           new_content = new_messages.any?
         end
 
@@ -127,7 +129,28 @@ module Recall
               .encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
               .gsub("\x00", "")
           end
-          session.messages.create!(attrs)
+          token_usage_attrs = attrs.delete(:token_usage)
+          message = session.messages.create!(attrs)
+          if token_usage_attrs
+            message.create_token_usage!(token_usage_attrs)
+          end
+        end
+      end
+
+      def backfill_token_usages(session, all_messages)
+        existing_message_ids = TokenUsage.where(message_id: session.message_ids).pluck(:message_id).to_set
+        messages_by_ext_id = session.messages.where.not(external_id: nil).index_by(&:external_id)
+
+        all_messages.each do |attrs|
+          tu_attrs = attrs[:token_usage]
+          next unless tu_attrs
+          next unless attrs[:external_id]
+
+          message = messages_by_ext_id[attrs[:external_id]]
+          next unless message
+          next if existing_message_ids.include?(message.id)
+
+          message.create_token_usage!(tu_attrs)
         end
       end
 

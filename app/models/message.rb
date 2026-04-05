@@ -2,6 +2,7 @@ class Message < ApplicationRecord
   include Searchable
 
   belongs_to :session, counter_cache: true
+  has_one :token_usage, dependent: :destroy
 
   validates :role, presence: true, inclusion: { in: %w[user assistant system tool_result] }
   validates :position, presence: true

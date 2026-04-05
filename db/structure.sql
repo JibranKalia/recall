@@ -44,9 +44,15 @@ FOREIGN KEY ("session_id")
 CREATE INDEX "index_session_summaries_on_session_id" ON "session_summaries" ("session_id") /*application='Recall'*/;
 CREATE TABLE IF NOT EXISTS "projects" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "name" varchar NOT NULL, "path" varchar NOT NULL, "sessions_count" integer DEFAULT 0 NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
 CREATE UNIQUE INDEX "index_projects_on_path" ON "projects" ("path") /*application='Recall'*/;
+CREATE TABLE IF NOT EXISTS "token_usages" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "message_id" integer NOT NULL, "input_tokens" integer DEFAULT 0 NOT NULL, "output_tokens" integer DEFAULT 0 NOT NULL, "cache_creation_input_tokens" integer DEFAULT 0 NOT NULL, "cache_read_input_tokens" integer DEFAULT 0 NOT NULL, "model" varchar, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_003a7b46d9"
+FOREIGN KEY ("message_id")
+  REFERENCES "messages" ("id")
+);
+CREATE UNIQUE INDEX "index_token_usages_on_message_id" ON "token_usages" ("message_id") /*application='Recall'*/;
 INSERT INTO "schema_migrations" (version) VALUES
 ('20260405013407'),
 ('20260405012247'),
+('20260404230000'),
 ('20260404213502'),
 ('20260404213006'),
 ('20260402174821'),

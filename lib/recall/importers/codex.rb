@@ -68,16 +68,34 @@ module Recall
         messages = []
         position = 0
 
-        entries.each do |entry|
+        # Collect token_count events to attach to the preceding response_item
+        token_counts = extract_token_counts(entries)
+
+        # Find model from turn_context for token_usage records
+        turn_context = entries.find { |e| e["type"] == "turn_context" }
+        codex_model = turn_context&.dig("payload", "model")
+
+        entries.each_with_index do |entry, idx|
           case entry["type"]
           when "response_item"
             msg = extract_response_item(entry, position)
             if msg
+              # Find the next token_count event after this response_item
+              tc = token_counts[idx]
+              if tc
+                last_usage = tc["last_token_usage"] || {}
+                msg[:token_usage] = {
+                  input_tokens: last_usage["input_tokens"].to_i,
+                  output_tokens: last_usage["output_tokens"].to_i,
+                  cache_creation_input_tokens: 0,
+                  cache_read_input_tokens: last_usage["cached_input_tokens"].to_i,
+                  model: codex_model
+                }
+              end
               messages << msg
               position += 1
             end
           end
-          # Skip event_msg — agent_message entries duplicate response_item content
         end
 
         messages
@@ -224,6 +242,26 @@ module Recall
         basename = File.basename(path, ".jsonl")
         match = basename.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)
         match&.[](1)
+      end
+
+      # Map each response_item index to its following token_count event
+      def extract_token_counts(entries)
+        counts = {}
+        last_response_idx = nil
+
+        entries.each_with_index do |entry, idx|
+          case entry["type"]
+          when "response_item"
+            last_response_idx = idx
+          when "event_msg"
+            if last_response_idx && entry.dig("payload", "type") == "token_count"
+              counts[last_response_idx] = entry.dig("payload", "info") || {}
+              last_response_idx = nil
+            end
+          end
+        end
+
+        counts
       end
 
       def load_thread_metadata
