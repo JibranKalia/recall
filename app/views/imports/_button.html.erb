@@ -1,5 +1,8 @@
 <form id="import_btn" action="<%= import_path %>" method="post" data-controller="pending-btn" data-action="submit->pending-btn#submit">
   <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+  <% if local_assigns[:session_id] %>
+    <%= hidden_field_tag :session_id, session_id %>
+  <% end %>
   <button type="submit" class="nav-refresh" data-pending-btn-target="btn" title="Import conversations">
     <span class="nav-refresh-icon">&#x21bb;</span>
   </button>

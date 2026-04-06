@@ -1,6 +1,6 @@
 <% summary = session.latest_summary %>
 <% if summary %>
-  <div class="session-summary-wrapper" data-controller="message-copy">
+  <div class="session-summary-wrapper" data-controller="message-copy" data-message-copy-raw-value="<%= summary.body %>">
     <div class="session-summary prose" data-message-copy-target="content"><%= render_markdown summary.body %></div>
     <div class="session-summary-meta">
       <span class="summary-timestamp">Summarized <%= time_ago_in_words(summary.created_at) %> ago &middot; <%= summary.created_at.strftime("%b %d, %Y %H:%M") %></span>

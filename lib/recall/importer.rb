@@ -26,6 +26,19 @@ module Recall
       puts "Done."
     end
 
+    def self.reimport_session(session)
+      source = session.source
+      return unless source&.source_path
+
+      importer_config = SOURCES.find { |s| s[:args][:source_name].to_s == source.source_name.to_s } ||
+                        SOURCES.find { |s| s[:class].name.demodulize.underscore == source.source_type.to_s }
+      return unless importer_config
+
+      importer = importer_config[:class].new(**importer_config[:args])
+      importer.send(:import_file, source.source_path, force: true)
+      rebuild_fts
+    end
+
     def self.import_source(name)
       source = SOURCES.find { |s|
         s[:args][:source_name] == name || s[:class].name.demodulize.underscore == name

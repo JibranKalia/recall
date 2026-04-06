@@ -81,7 +81,7 @@
         </details>
       </div>
     <% elsif message.role == "user" %>
-      <div id="msg-<%= message.id %>" class="message <%= message_css_class(message) %>" data-controller="message-copy">
+      <div id="msg-<%= message.id %>" class="message <%= message_css_class(message) %>" data-controller="message-copy" data-message-copy-raw-value="<%= message.content_text %>">
         <div class="message-header">
           <span class="message-role-label role-label-user">You</span>
           <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>
@@ -94,7 +94,7 @@
         </div>
       </div>
     <% elsif message.role == "assistant" && assistant_has_text?(message) %>
-      <div id="msg-<%= message.id %>" class="message <%= message_css_class(message) %>" data-controller="message-copy">
+      <div id="msg-<%= message.id %>" class="message <%= message_css_class(message) %>" data-controller="message-copy" data-message-copy-raw-value="<%= message.content_text %>">
         <div class="message-header">
           <span class="message-role-label role-label-assistant">Assistant</span>
           <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>

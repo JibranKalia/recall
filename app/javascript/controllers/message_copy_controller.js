@@ -22,9 +22,10 @@ function copyText(text) {
 // Copies the text content of a message to the clipboard
 export default class extends Controller {
   static targets = ["content", "icon"]
+  static values = { raw: String }
 
   async copy() {
-    const text = this.contentTarget.innerText
+    const text = this.hasRawValue && this.rawValue ? this.rawValue : this.contentTarget.innerText
     await copyText(text)
 
     const btn = this.element.querySelector(".msg-copy-btn")
