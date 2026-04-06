@@ -1,5 +1,5 @@
 class ImportJob < ApplicationJob
-  queue_as :default
+  queue_as :imports
 
   def perform
     Recall::Importer.import_all

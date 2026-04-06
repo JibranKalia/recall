@@ -7,23 +7,27 @@ module Recall
     ].freeze
 
     def self.import_all
-      puts "Recall: importing conversations..."
-      SOURCES.each do |source|
-        importer = source[:class].new(**source[:args])
-        importer.import_all
+      with_import_run do
+        puts "Recall: importing conversations..."
+        SOURCES.each do |source|
+          importer = source[:class].new(**source[:args])
+          importer.import_all
+        end
+        rebuild_fts
+        puts "Done."
       end
-      rebuild_fts
-      puts "Done."
     end
 
     def self.reimport_all
-      puts "Recall: force re-importing all conversations..."
-      SOURCES.each do |source|
-        importer = source[:class].new(**source[:args])
-        importer.reimport_all
+      with_import_run do
+        puts "Recall: force re-importing all conversations..."
+        SOURCES.each do |source|
+          importer = source[:class].new(**source[:args])
+          importer.reimport_all
+        end
+        rebuild_fts
+        puts "Done."
       end
-      rebuild_fts
-      puts "Done."
     end
 
     def self.reimport_session(session)
@@ -45,11 +49,22 @@ module Recall
       }
       raise "Unknown source: #{name}" unless source
 
-      puts "Recall: importing #{name}..."
-      importer = source[:class].new(**source[:args])
-      importer.import_all
-      rebuild_fts
-      puts "Done."
+      with_import_run do
+        puts "Recall: importing #{name}..."
+        importer = source[:class].new(**source[:args])
+        importer.import_all
+        rebuild_fts
+        puts "Done."
+      end
+    end
+
+    def self.with_import_run
+      run = ImportRun.create!(started_at: Time.current)
+      yield
+      run.complete!
+    rescue => e
+      run&.fail!
+      raise
     end
 
     def self.rebuild_fts

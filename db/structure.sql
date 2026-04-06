@@ -73,7 +73,11 @@ FOREIGN KEY ("session_id")
   REFERENCES "sessions" ("id")
 );
 CREATE INDEX "index_experiments_on_session_id" ON "experiments" ("session_id") /*application='Recall'*/;
+CREATE TABLE IF NOT EXISTS "import_runs" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "status" varchar DEFAULT 'running' NOT NULL, "started_at" datetime(6) NOT NULL, "completed_at" datetime(6), "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
+CREATE INDEX "index_import_runs_on_status" ON "import_runs" ("status") /*application='Recall'*/;
+CREATE INDEX "index_import_runs_on_completed_at" ON "import_runs" ("completed_at") /*application='Recall'*/;
 INSERT INTO "schema_migrations" (version) VALUES
+('20260406120000'),
 ('20260406105320'),
 ('20260406105036'),
 ('20260406031055'),

@@ -1,4 +1,6 @@
 class ProjectsController < ApplicationController
+  before_action :trigger_import_if_stale, only: [ :index, :show ]
+
   def index
     @projects = Project
       .joins(sessions: :source)
@@ -39,5 +41,15 @@ class ProjectsController < ApplicationController
     end
 
     @sessions = @project.sessions.includes(:token_usages).recent.page(params[:page])
+  end
+
+  private
+
+  def trigger_import_if_stale
+    return if ImportRun.any_running?
+    return if SolidQueue::Job.where(class_name: "ImportJob", finished_at: nil).exists?
+    last_at = ImportRun.last_completed_at
+    return if last_at && last_at > 30.minutes.ago
+    ImportJob.perform_later
   end
 end

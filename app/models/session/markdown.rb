@@ -27,7 +27,8 @@ class Session::Markdown
     lines << "---"
     lines << ""
 
-    turns = group_into_turns(session.messages.ordered)
+    msgs = session.messages.loaded? ? session.messages.sort_by(&:position) : session.messages.order(:position)
+    turns = group_into_turns(msgs)
 
     turns.each do |turn|
       case turn[:role]

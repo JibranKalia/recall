@@ -31,7 +31,11 @@ class Session < ApplicationRecord
   end
 
   def estimated_cost
-    @estimated_cost ||= token_usages.sum { |tu| tu.estimated_cost || 0 }
+    @estimated_cost ||= if messages.loaded?
+      messages.filter_map(&:token_usage).sum { |tu| tu.estimated_cost || 0 }
+    else
+      token_usages.sum { |tu| tu.estimated_cost || 0 }
+    end
   end
 
   def estimated_cost_formatted
