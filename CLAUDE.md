@@ -40,13 +40,25 @@ bin/recall search "query"              # CLI search
 - **Session::Summary**: AI-generated summary with `body` and `title`. Table name is `session_summaries`.
 - **Session::Markdown**: non-DB model that renders a session as Markdown. Instantiated via `session.to_markdown`.
 - **TokenUsage**: per-message token breakdown — `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`, `model`. One-to-one with Message. Supports `estimated_cost` via rate card lookup.
+- **Experiment**: a prompt evaluated against one or more LLM providers. Has `name`, `prompt_text`, `system_prompt`, `status`. All LLM calls must go through `Experiment.complete!` (sync) or `RunProviderJob` (async) — never call `LLM::Provider` directly.
+- **Experiment::Run**: one provider's execution of an experiment — `provider_key`, `model`, `status`, `response_text`, `tokens_in`, `tokens_out`, `estimated_cost`, `duration_ms`. Table name is `experiment_runs`.
+
+**LLM provider layer** (`app/models/llm/`):
+- `LLM::Provider` — base class. Subclasses implement `#complete(prompt, system:)` returning a `Result` (output, tokens_in, tokens_out, model, duration_ms).
+- `LLM::Providers::Ollama` — HTTP to localhost:11434 (Ollama API). Default model: `qwen2.5:14b`.
+- `LLM::Providers::ClaudeCode` — shells out to `claude -p --output-format json`. Parses usage from JSON.
+- `LLM::Providers::OpenCode` — shells out to `opencode -p` (Kimi K2).
+- `LLM::Providers::Codex` — shells out to `codex -q`.
+- `LLM::PROVIDERS` registry maps string keys (e.g. `"ollama"`, `"claude_code:opus"`) to provider factories.
+- `LLM::RATES` maps model names to per-token pricing for cost estimation.
+- **Important**: All LLM calls must create an Experiment record. Use `Experiment.complete!` for synchronous calls or create an Experiment + Run and enqueue `RunProviderJob` for async.
 
 **Import pipeline** (`lib/recall/`):
 - `Importer` orchestrates imports from 3 registered sources, rebuilds FTS after each run.
 - `Importers::Base` provides checksum-based dedup, transactional imports, UTF-8 sanitization. Each file import is wrapped in a transaction.
 - `Importers::ClaudeCode` reads `~/.claude/projects/**/*.jsonl` and `~/.claude-work/projects/**/*.jsonl`. Skips `memory.jsonl` and non-message entry types.
 - `Importers::Codex` reads `~/.codex/sessions/**/*.jsonl` plus SQLite state DB (`state_5.sqlite`) for metadata (title, tokens, model, git branch).
-- `GenerateSummaryJob` is enqueued during import to auto-generate summaries + titles via Ollama (`Recall::Summarizer`).
+- `GenerateSummaryJob` is enqueued during import to auto-generate summaries + titles via `Experiment.complete!` (`Recall::Summarizer`). Each chunk summary and title generation creates its own Experiment record.
 
 **FTS5 search** (`Searchable` concern):
 - Two FTS virtual tables: `messages_fts` (content_text) and `sessions_fts` (title, custom_title, summary).
@@ -56,7 +68,7 @@ bin/recall search "query"              # CLI search
 
 **Data directory**: Dev databases live in `~/.config/recall/` (configurable via `RECALL_DATA_DIR`), making the CLI work from any directory.
 
-**Web UI**: Projects index → Project show (paginated sessions, 30/page) → Session show (messages with Markdown export). Global search page with live XHR results.
+**Web UI**: Projects index → Project show (paginated sessions, 30/page) → Session show (messages with Markdown export). Global search page with live XHR results. Experiments page (`/experiments`) for creating and comparing multi-provider LLM runs with live Turbo Stream updates.
 
 **CLI**: `bin/recall` — search, import, stats, projects, sessions commands. Loads Rails env but works from any directory.
 

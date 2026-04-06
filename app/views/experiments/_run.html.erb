@@ -1,0 +1,36 @@
+<div id="run_<%= run.id %>" class="run-card run-status-<%= run.status %>">
+  <div class="run-card-header">
+    <span class="run-provider-name"><%= run.provider_key %></span>
+    <span class="run-model-tag"><%= run.model %></span>
+    <span class="experiment-status-badge experiment-status-<%= run.status %>"><%= run.status %></span>
+  </div>
+
+  <% if run.completed? %>
+    <div class="run-metrics">
+      <span class="run-metric">
+        <span class="run-metric-label">Time</span>
+        <span class="run-metric-value"><%= run.duration_formatted %></span>
+      </span>
+      <span class="run-metric">
+        <span class="run-metric-label">Tokens</span>
+        <span class="run-metric-value"><%= number_with_delimiter(run.tokens_in) %> / <%= number_with_delimiter(run.tokens_out) %></span>
+      </span>
+      <span class="run-metric">
+        <span class="run-metric-label">Cost</span>
+        <span class="run-metric-value"><%= run.cost_formatted || "free" %></span>
+      </span>
+    </div>
+    <div class="run-response prose"><%= render_markdown(run.response_text || "") %></div>
+  <% elsif run.failed? %>
+    <div class="run-error"><%= run.error_message %></div>
+  <% else %>
+    <div class="run-pending">
+      <div class="run-spinner"></div>
+      <span><%= run.status == "running" ? "Running..." : "Queued" %></span>
+    </div>
+  <% end %>
+
+  <div class="run-card-actions">
+    <%= button_to "Re-run", rerun_experiment_path(run.experiment, run_id: run.id), method: :post, class: "btn btn-secondary btn-xs" %>
+  </div>
+</div>

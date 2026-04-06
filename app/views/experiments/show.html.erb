@@ -1,0 +1,73 @@
+<%= turbo_stream_from @experiment %>
+
+<%= link_to "&larr; Experiments".html_safe, experiments_path, class: "back-link" %>
+
+<div class="experiment-header">
+  <div class="experiment-title-row">
+    <h1 class="page-title"><%= @experiment.name %></h1>
+    <div id="experiment_status">
+      <%= render "experiments/status", experiment: @experiment %>
+    </div>
+  </div>
+
+  <% if @experiment.system_prompt.present? %>
+    <details class="experiment-system-prompt">
+      <summary class="text-muted text-sm">System prompt</summary>
+      <pre class="experiment-prompt-text"><%= @experiment.system_prompt %></pre>
+    </details>
+  <% end %>
+
+  <details class="experiment-prompt-details" open>
+    <summary class="text-muted text-sm">Prompt</summary>
+    <pre class="experiment-prompt-text"><%= @experiment.prompt_text %></pre>
+  </details>
+</div>
+
+<div class="experiment-add-provider">
+  <%= form_with url: add_provider_experiment_path(@experiment), method: :post, class: "add-provider-form" do %>
+    <select name="provider_key" class="form-select">
+      <% LLM::PROVIDERS.keys.each do |key| %>
+        <option value="<%= key %>"><%= key %></option>
+      <% end %>
+    </select>
+    <button type="submit" class="btn btn-secondary btn-sm">+ Add Provider</button>
+  <% end %>
+</div>
+
+<div class="runs-grid">
+  <% @experiment.runs.order(:created_at).each do |run| %>
+    <%= render "experiments/run", run: run %>
+  <% end %>
+</div>
+
+<% if @experiment.runs.completed.count > 1 %>
+  <div class="experiment-comparison-summary">
+    <h2>Comparison</h2>
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Provider</th>
+          <th>Model</th>
+          <th>Duration</th>
+          <th>Tokens In</th>
+          <th>Tokens Out</th>
+          <th>Cost</th>
+          <th>Response Length</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @experiment.runs.completed.order(:duration_ms).each do |run| %>
+          <tr>
+            <td><%= run.provider_key %></td>
+            <td class="text-xs"><%= run.model %></td>
+            <td><%= run.duration_formatted %></td>
+            <td><%= number_with_delimiter(run.tokens_in) %></td>
+            <td><%= number_with_delimiter(run.tokens_out) %></td>
+            <td><%= run.cost_formatted || "free" %></td>
+            <td><%= number_with_delimiter(run.response_text&.length || 0) %> chars</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

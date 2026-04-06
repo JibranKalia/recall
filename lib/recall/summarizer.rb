@@ -1,35 +1,42 @@
-require "httparty"
-
 module Recall
   class Summarizer
-    OLLAMA_URL = "http://localhost:11434/api/generate"
-    MODEL = "qwen2.5:14b"
     MESSAGES_PER_CHUNK = 50
     MAX_CHUNK_CHARS = 24_000
 
     CHUNK_SYSTEM_PROMPT = <<~PROMPT.freeze
-      You are a conversation summarizer. You will be given a portion of a conversation between a user and an AI coding assistant.
+      You are a conversation summarizer. You will receive a portion of a conversation between a user and an AI coding assistant.
 
+      <context>
       %{context_line}
+      </context>
 
+      <instructions>
       Summarize this portion as bullet points focusing on OUTCOMES, not process:
       - Decisions made and why
       - Artifacts created or modified (files, diagrams, specs, queries)
       - Technical designs, architecture choices, and trade-offs
       - Problems solved and how
+      </instructions>
 
-      Rules:
+      <rules>
       - Never use "User asked" / "Assistant provided" / "User requested" phrasing
       - Write in past tense, action-oriented voice (e.g. "Designed enrichment pipeline with 4 layers" not "User asked for a pipeline design")
       - Group related items together rather than listing chronologically
       - Do not repeat information already covered in the prior summary
       - Output only bullet points, no preamble
+      </rules>
     PROMPT
 
     TITLE_PROMPT = <<~PROMPT.freeze
-      You are a conversation summarizer. Given a summary of an entire conversation between a user and an AI coding assistant, generate a descriptive title (up to 15 words) that captures the main intent, topic, and outcome.
+      You are a conversation summarizer.
 
-      Output only the title, no quotes, no preamble.
+      <instructions>
+      Given a summary of an entire conversation between a user and an AI coding assistant, generate a descriptive title (up to 15 words) that captures the main intent, topic, and outcome.
+      </instructions>
+
+      <rules>
+      - Output only the title, no quotes, no preamble
+      </rules>
     PROMPT
 
     def self.generate(session)
@@ -55,8 +62,9 @@ module Recall
       puts "Generated #{generated}/#{total} summaries."
     end
 
-    def initialize(session)
+    def initialize(session, provider_key: "ollama")
       @session = session
+      @provider_key = provider_key
       @logger = Rails.logger
     end
 
@@ -95,70 +103,63 @@ module Recall
 
       chunks = messages.each_slice(MESSAGES_PER_CHUNK).to_a
       total_chunks = chunks.size
-      @logger.info "[Summarizer] Session #{@session.id}: #{messages.size} messages → #{total_chunks} chunks"
+      @logger.info "[Summarizer] Session #{@session.id}: #{messages.size} messages -> #{total_chunks} chunks"
       summary_so_far = nil
 
       chunks.each_with_index do |chunk, i|
-        chunk_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-        context_line = if summary_so_far
-          "Here is the summary of the conversation so far:\n#{summary_so_far}\n\nNow summarize the next portion. Only add new information."
-        else
-          "This is the beginning of the conversation."
-        end
-
-        prompt = format(CHUNK_SYSTEM_PROMPT, context_line: context_line)
+        system = format(CHUNK_SYSTEM_PROMPT, context_line: context_line_for(summary_so_far))
         formatted = format_messages(chunk)
 
-        result = call_ollama(prompt, formatted, num_predict: 500)
-        unless result
-          @logger.warn "[Summarizer] Session #{@session.id}: chunk #{i + 1}/#{total_chunks} returned nil, stopping"
+        run = Experiment.complete!(
+          "Session #{@session.id} — summary chunk #{i + 1}/#{total_chunks}",
+          prompt: formatted,
+          system: system,
+          provider_key: @provider_key
+        )
+
+        unless run.response_text.present?
+          @logger.warn "[Summarizer] Session #{@session.id}: chunk #{i + 1}/#{total_chunks} returned blank, stopping"
           break
         end
 
-        chunk_elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - chunk_start).round(1)
-        @logger.info "[Summarizer] Session #{@session.id}: chunk #{i + 1}/#{total_chunks} done (#{chunk_elapsed}s, #{chunk.size} msgs)"
+        @logger.info "[Summarizer] Session #{@session.id}: chunk #{i + 1}/#{total_chunks} done (#{run.duration_formatted}, #{chunk.size} msgs)"
 
-        summary_so_far = if summary_so_far
-          "#{summary_so_far}\n#{result}"
-        else
-          result
-        end
+        summary_so_far = [ summary_so_far, run.response_text ].compact.join("\n")
       end
 
       summary_so_far
     end
 
     def generate_title(body)
-      raw = call_ollama(TITLE_PROMPT, body, num_predict: 50)
-      return nil if raw.blank?
+      run = Experiment.complete!(
+        "Session #{@session.id} — title generation",
+        prompt: "<summary>\n#{body}\n</summary>",
+        system: TITLE_PROMPT,
+        provider_key: @provider_key,
+        session: @session
+      )
 
-      raw.delete_prefix('"').delete_suffix('"').truncate(200)
+      return nil if run.response_text.blank?
+
+      run.response_text.delete_prefix('"').delete_suffix('"').truncate(200)
+    end
+
+    def context_line_for(summary_so_far)
+      if summary_so_far
+        "This is a continuation. Here is the summary so far:\n<prior_summary>\n#{summary_so_far}\n</prior_summary>\n\nSummarize the next portion. Only add new information not already covered above."
+      else
+        "This is the beginning of the conversation."
+      end
     end
 
     def format_messages(messages)
       per_message = MAX_CHUNK_CHARS / [messages.size, 1].max
-      messages.map do |m|
+      turns = messages.map do |m|
         text = m.content_text.to_s.truncate(per_message)
-        "#{m.role}: #{text}"
+        "<message role=\"#{m.role}\">\n#{text}\n</message>"
       end.join("\n\n")
-    end
 
-    def call_ollama(system_prompt, context, num_predict: 500)
-      response = HTTParty.post(OLLAMA_URL,
-        body: {
-          model: MODEL,
-          prompt: "#{system_prompt}\n\nConversation:\n#{context}",
-          stream: false,
-          options: { temperature: 0.3, num_predict: num_predict }
-        }.to_json,
-        headers: { "Content-Type" => "application/json" },
-        timeout: 120
-      )
-
-      return nil unless response.success?
-
-      response.parsed_response["response"]&.strip
+      "<conversation>\n#{turns}\n</conversation>"
     end
   end
 end

@@ -1,0 +1,35 @@
+<h1 class="page-title">New Experiment</h1>
+
+<%= form_with model: @experiment, url: experiments_path, method: :post, class: "experiment-form" do |f| %>
+  <div class="form-group">
+    <label class="form-label" for="experiment_name">Name</label>
+    <%= f.text_field :name, class: "form-input", placeholder: "e.g. Summarization comparison", required: true %>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label" for="experiment_system_prompt">System Prompt <span class="text-dim">(optional)</span></label>
+    <%= f.text_area :system_prompt, class: "form-textarea", rows: 4, placeholder: "Instructions for the model..." %>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label" for="experiment_prompt_text">Prompt</label>
+    <%= f.text_area :prompt_text, class: "form-textarea", rows: 8, placeholder: "The prompt to send to all selected providers...", required: true %>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Providers</label>
+    <div class="provider-checkboxes">
+      <% @available_providers.each do |key| %>
+        <label class="provider-checkbox">
+          <input type="checkbox" name="provider_keys[]" value="<%= key %>" <%= "checked" if key == "ollama" %>>
+          <span class="provider-checkbox-label"><%= key %></span>
+        </label>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <%= f.submit "Run Experiment", class: "btn btn-primary" %>
+    <%= link_to "Cancel", experiments_path, class: "btn btn-secondary" %>
+  </div>
+<% end %>

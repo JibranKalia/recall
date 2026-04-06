@@ -63,7 +63,16 @@ CREATE TRIGGER message_contents_ai AFTER INSERT ON message_contents BEGIN
   INSERT INTO messages_fts(rowid, content_text)
   VALUES (new.message_id, new.content_text);
 END;
+CREATE TABLE IF NOT EXISTS "experiment_runs" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "experiment_id" integer NOT NULL, "provider_key" varchar NOT NULL, "model" varchar NOT NULL, "status" varchar DEFAULT 'pending' NOT NULL, "response_text" text, "tokens_in" integer, "tokens_out" integer, "estimated_cost" float, "duration_ms" integer, "error_message" text, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_6c02fc6d5d"
+FOREIGN KEY ("experiment_id")
+  REFERENCES "experiments" ("id")
+);
+CREATE INDEX "index_experiment_runs_on_experiment_id" ON "experiment_runs" ("experiment_id") /*application='Recall'*/;
+CREATE TABLE IF NOT EXISTS "experiments" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "name" varchar NOT NULL, "prompt_text" text NOT NULL, "system_prompt" text, "status" varchar DEFAULT 'pending' NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
 INSERT INTO "schema_migrations" (version) VALUES
+('20260406031055'),
+('20260406030624'),
+('20260406025408'),
 ('20260405223110'),
 ('20260405013407'),
 ('20260405012247'),
