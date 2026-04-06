@@ -13,13 +13,18 @@ class LLM::Providers::ClaudeCode < LLM::Provider
     "claude_code"
   end
 
+  def work_dir?
+    Dir.pwd.start_with?(File.expand_path("~/work"))
+  end
+
   def complete(prompt, system: nil, **)
     start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
     full_prompt = system ? "#{system}\n\n#{prompt}" : prompt
 
     cmd = [ "claude", "-p", "--model", @model, "--output-format", "json" ]
-    stdout, stderr, status = Open3.capture3(*cmd, stdin_data: full_prompt)
+    env = work_dir? ? { "CLAUDE_CONFIG_DIR" => File.expand_path("~/.claude-work") } : {}
+    stdout, stderr, status = Open3.capture3(env, *cmd, stdin_data: full_prompt)
 
     duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round
 

@@ -1,8 +1,8 @@
 class GenerateSummaryJob < ApplicationJob
   queue_as :default
 
-  def perform(session)
-    Recall::Summarizer.generate(session)
+  def perform(session, provider_key: "claude_code:sonnet")
+    Recall::Summarizer.new(session, provider_key: provider_key).generate
     session.reload
 
     Turbo::StreamsChannel.broadcast_update_to(
