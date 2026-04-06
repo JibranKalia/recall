@@ -7,7 +7,7 @@ class Experiment < ApplicationRecord
   scope :recent, -> { order(created_at: :desc) }
 
   # Synchronous single-prompt call. Creates Experiment + Run, executes inline, returns the Run.
-  def self.complete!(name, prompt:, provider_key: "ollama", system: nil, session: nil)
+  def self.complete!(name, prompt:, provider_key: "ollama:qwen3:8b", system: nil, session: nil)
     experiment = create!(
       name: name,
       prompt_text: prompt,

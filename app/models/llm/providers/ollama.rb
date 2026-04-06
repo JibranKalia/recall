@@ -2,11 +2,10 @@ require "httparty"
 
 class LLM::Providers::Ollama < LLM::Provider
   DEFAULT_URL = "http://localhost:11434"
-  DEFAULT_MODEL = "qwen3:8b"
 
   attr_reader :model
 
-  def initialize(model: DEFAULT_MODEL, base_url: DEFAULT_URL)
+  def initialize(model:, base_url: DEFAULT_URL)
     @model = model
     @base_url = base_url
   end
@@ -51,4 +50,5 @@ class LLM::Providers::Ollama < LLM::Provider
       model: @model,
       duration_ms: duration_ms
     )
+  end
 end

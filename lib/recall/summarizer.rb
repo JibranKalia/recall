@@ -26,7 +26,7 @@ module Recall
       puts "Generated #{generated}/#{total} summaries."
     end
 
-    def initialize(session, provider_key: "ollama")
+    def initialize(session, provider_key: "ollama:qwen3:8b")
       @session = session
       @provider_key = provider_key
       @logger = Rails.logger
