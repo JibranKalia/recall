@@ -3,42 +3,6 @@ module Recall
     MESSAGES_PER_CHUNK = 50
     MAX_CHUNK_CHARS = 24_000
 
-    CHUNK_SYSTEM_PROMPT = <<~PROMPT.freeze
-      You are a conversation summarizer. You will receive a portion of a conversation between a user and an AI coding assistant.
-
-      <context>
-      %{context_line}
-      </context>
-
-      <instructions>
-      Summarize this portion as bullet points focusing on OUTCOMES, not process:
-      - Decisions made and why
-      - Artifacts created or modified (files, diagrams, specs, queries)
-      - Technical designs, architecture choices, and trade-offs
-      - Problems solved and how
-      </instructions>
-
-      <rules>
-      - Never use "User asked" / "Assistant provided" / "User requested" phrasing
-      - Write in past tense, action-oriented voice (e.g. "Designed enrichment pipeline with 4 layers" not "User asked for a pipeline design")
-      - Group related items together rather than listing chronologically
-      - Do not repeat information already covered in the prior summary
-      - Output only bullet points, no preamble
-      </rules>
-    PROMPT
-
-    TITLE_PROMPT = <<~PROMPT.freeze
-      You are a conversation summarizer.
-
-      <instructions>
-      Given a summary of an entire conversation between a user and an AI coding assistant, generate a descriptive title (up to 15 words) that captures the main intent, topic, and outcome.
-      </instructions>
-
-      <rules>
-      - Output only the title, no quotes, no preamble
-      </rules>
-    PROMPT
-
     def self.generate(session)
       new(session).generate
     end
@@ -107,13 +71,10 @@ module Recall
       summary_so_far = nil
 
       chunks.each_with_index do |chunk, i|
-        system = format(CHUNK_SYSTEM_PROMPT, context_line: context_line_for(summary_so_far))
-        formatted = format_messages(chunk)
-
         run = Experiment.complete!(
           "Session #{@session.id} — summary chunk #{i + 1}/#{total_chunks}",
-          prompt: formatted,
-          system: system,
+          prompt: format_messages(chunk),
+          system: chunk_system_prompt(summary_so_far),
           provider_key: @provider_key
         )
 
@@ -131,12 +92,21 @@ module Recall
     end
 
     def generate_title(body)
+      system = LLM::PromptBuilder.build do |p|
+        p.text "You are a conversation summarizer."
+        p.instructions "Given a summary of a conversation between a user and an AI coding assistant, generate a descriptive title (up to 15 words) that captures the main intent, topic, and outcome."
+        p.rules "- Output only the title, no quotes, no preamble"
+      end
+
+      prompt = LLM::PromptBuilder.build do |p|
+        p.summary body
+      end
+
       run = Experiment.complete!(
         "Session #{@session.id} — title generation",
-        prompt: "<summary>\n#{body}\n</summary>",
-        system: TITLE_PROMPT,
-        provider_key: @provider_key,
-        session: @session
+        prompt: prompt,
+        system: system,
+        provider_key: @provider_key
       )
 
       return nil if run.response_text.blank?
@@ -144,22 +114,56 @@ module Recall
       run.response_text.delete_prefix('"').delete_suffix('"').truncate(200)
     end
 
-    def context_line_for(summary_so_far)
-      if summary_so_far
-        "This is a continuation. Here is the summary so far:\n<prior_summary>\n#{summary_so_far}\n</prior_summary>\n\nSummarize the next portion. Only add new information not already covered above."
-      else
-        "This is the beginning of the conversation."
+    def chunk_system_prompt(summary_so_far)
+      LLM::PromptBuilder.build do |p|
+        p.text "You are a conversation summarizer. You will receive a portion of a conversation between a user and an AI coding assistant."
+
+        p.context do |c|
+          if summary_so_far
+            c.text "This is a continuation. Here is the summary so far:"
+            c.prior_summary summary_so_far
+            c.text "Summarize the next portion. Only add new information not already covered above."
+          else
+            c.text "This is the beginning of the conversation."
+          end
+        end
+
+        p.instructions <<~TEXT.strip
+          Summarize this portion as bullet points focusing on OUTCOMES, not process:
+          - Decisions made and why
+          - Artifacts created or modified (files, diagrams, specs, queries)
+          - Technical designs, architecture choices, and trade-offs
+          - Problems solved and how
+        TEXT
+
+        p.rules <<~TEXT.strip
+          - Never use "User asked" / "Assistant provided" / "User requested" phrasing
+          - Write in past tense, action-oriented voice (e.g. "Designed enrichment pipeline with 4 layers" not "User asked for a pipeline design")
+          - Group related items together rather than listing chronologically
+          - Do not repeat information already covered in the prior summary
+          - Output only bullet points, no preamble
+        TEXT
       end
     end
 
     def format_messages(messages)
-      per_message = MAX_CHUNK_CHARS / [messages.size, 1].max
-      turns = messages.map do |m|
-        text = m.content_text.to_s.truncate(per_message)
-        "<message role=\"#{m.role}\">\n#{text}\n</message>"
-      end.join("\n\n")
+      meaningful = messages.reject { |m| tool_only?(m) }
+      per_message = MAX_CHUNK_CHARS / [meaningful.size, 1].max
 
-      "<conversation>\n#{turns}\n</conversation>"
+      LLM::PromptBuilder.build do |p|
+        p.conversation do |c|
+          meaningful.each do |m|
+            text = m.content_text.to_s.truncate(per_message)
+            c.send(m.role.to_sym, text)
+          end
+        end
+      end
+    end
+
+    def tool_only?(message)
+      return false unless message.role == "assistant"
+      text = message.content_text.to_s.strip
+      text.match?(/\A\[Tool: .+\]\z/)
     end
   end
 end
