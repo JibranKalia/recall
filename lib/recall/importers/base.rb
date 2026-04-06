@@ -1,10 +1,11 @@
 module Recall
   module Importers
     class Base
-      attr_reader :stats
+      attr_reader :stats, :imported_session_ids
 
       def initialize
         @stats = { scanned: 0, imported: 0, skipped: 0, errors: 0 }
+        @imported_session_ids = []
       end
 
       def import_all
@@ -75,15 +76,20 @@ module Recall
         session_attrs = extract_session_attrs(entries, path, checksum, size)
         return if session_attrs.nil?
 
-        session = ActiveRecord::Base.transaction do
-          if existing
-            update_session(existing, entries, session_attrs, checksum, size)
-          else
-            create_session(entries, session_attrs)
+        session = with_retry do
+          ActiveRecord::Base.transaction do
+            if existing
+              update_session(existing, entries, session_attrs, checksum, size)
+            else
+              create_session(entries, session_attrs)
+            end
           end
         end
 
-        generate_title(session) if session
+        if session
+          @imported_session_ids << session.id
+          generate_title(session)
+        end
 
         @stats[:imported] += 1
       end
@@ -199,6 +205,16 @@ module Recall
 
       def generate_title(session)
         GenerateSummaryJob.perform_later(session)
+      end
+
+      def with_retry(attempts: 3, base_delay: 0.5)
+        attempts.times do |i|
+          return yield
+        rescue ActiveRecord::StatementInvalid => e
+          raise unless e.cause.is_a?(SQLite3::BusyException)
+          raise if i == attempts - 1
+          sleep(base_delay * (2**i))
+        end
       end
 
       def log_stats

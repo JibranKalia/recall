@@ -9,11 +9,13 @@ module Recall
     def self.import_all
       with_import_run do
         puts "Recall: importing conversations..."
+        session_ids = []
         SOURCES.each do |source|
           importer = source[:class].new(**source[:args])
           importer.import_all
+          session_ids.concat(importer.imported_session_ids)
         end
-        rebuild_fts
+        sync_fts(session_ids)
         puts "Done."
       end
     end
@@ -30,6 +32,28 @@ module Recall
       end
     end
 
+    def self.sync_fts(session_ids)
+      if session_ids.empty?
+        puts "  No sessions to index."
+        return
+      end
+
+      conn = ActiveRecord::Base.connection
+      print "  Indexing #{session_ids.size} changed sessions..."
+      session_ids.each_slice(100) do |ids|
+        placeholders = ids.map { "?" }.join(",")
+        # Delete old entries for these sessions
+        conn.execute(ActiveRecord::Base.sanitize_sql_array([
+          "INSERT INTO messages_fts(messages_fts, rowid, content_text) SELECT 'delete', mc.message_id, mc.content_text FROM message_contents mc JOIN messages m ON m.id = mc.message_id WHERE m.session_id IN (#{placeholders})", *ids
+        ]))
+        # Re-insert current entries
+        conn.execute(ActiveRecord::Base.sanitize_sql_array([
+          "INSERT INTO messages_fts(rowid, content_text) SELECT mc.message_id, mc.content_text FROM message_contents mc JOIN messages m ON m.id = mc.message_id WHERE m.session_id IN (#{placeholders})", *ids
+        ]))
+      end
+      puts " done."
+    end
+
     def self.reimport_session(session)
       source = session.source
       return unless source&.source_path
@@ -40,7 +64,7 @@ module Recall
 
       importer = importer_config[:class].new(**importer_config[:args])
       importer.send(:import_file, source.source_path, force: true)
-      rebuild_fts
+      sync_fts([session.id])
     end
 
     def self.import_source(name)
@@ -53,7 +77,7 @@ module Recall
         puts "Recall: importing #{name}..."
         importer = source[:class].new(**source[:args])
         importer.import_all
-        rebuild_fts
+        sync_fts(importer.imported_session_ids)
         puts "Done."
       end
     end

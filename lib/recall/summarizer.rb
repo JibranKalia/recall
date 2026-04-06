@@ -54,7 +54,7 @@ module Recall
       elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start).round(1)
       @logger.info "[Summarizer] Session #{@session.id}: done in #{elapsed}s — \"#{title}\""
 
-      @session.summaries.create!(title: title, body: body)
+      @session.summaries.create!(title: title, body: body, experiment_run: @last_run)
     rescue => e
       @logger.error "[Summarizer] Session #{@session.id} failed: #{e.message}"
       nil
@@ -114,6 +114,7 @@ module Recall
 
       return nil if run.response_text.blank?
 
+      @last_run = run
       strip_thinking_tags(run.response_text).delete_prefix('"').delete_suffix('"').truncate(200)
     end
 

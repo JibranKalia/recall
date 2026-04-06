@@ -13,11 +13,6 @@ CREATE TABLE IF NOT EXISTS 'sessions_fts_data'(id INTEGER PRIMARY KEY, block BLO
 CREATE TABLE IF NOT EXISTS 'sessions_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
 CREATE TABLE IF NOT EXISTS 'sessions_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
 CREATE TABLE IF NOT EXISTS 'sessions_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS "session_summaries" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "session_id" integer NOT NULL, "body" text NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "title" varchar /*application='Recall'*/, CONSTRAINT "fk_rails_3c0482b265"
-FOREIGN KEY ("session_id")
-  REFERENCES "sessions" ("id")
-);
-CREATE INDEX "index_session_summaries_on_session_id" ON "session_summaries" ("session_id") /*application='Recall'*/;
 CREATE TABLE IF NOT EXISTS "projects" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "name" varchar NOT NULL, "path" varchar NOT NULL, "sessions_count" integer DEFAULT 0 NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "domain" varchar DEFAULT 'personal' NOT NULL /*application='Recall'*/);
 CREATE UNIQUE INDEX "index_projects_on_path" ON "projects" ("path") /*application='Recall'*/;
 CREATE TABLE IF NOT EXISTS "token_usages" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "message_id" integer NOT NULL, "input_tokens" integer DEFAULT 0 NOT NULL, "output_tokens" integer DEFAULT 0 NOT NULL, "cache_creation_input_tokens" integer DEFAULT 0 NOT NULL, "cache_read_input_tokens" integer DEFAULT 0 NOT NULL, "model" varchar, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_003a7b46d9"
@@ -59,10 +54,6 @@ CREATE TABLE IF NOT EXISTS 'messages_fts_data'(id INTEGER PRIMARY KEY, block BLO
 CREATE TABLE IF NOT EXISTS 'messages_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
 CREATE TABLE IF NOT EXISTS 'messages_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
 CREATE TABLE IF NOT EXISTS 'messages_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
-CREATE TRIGGER message_contents_ai AFTER INSERT ON message_contents BEGIN
-  INSERT INTO messages_fts(rowid, content_text)
-  VALUES (new.message_id, new.content_text);
-END;
 CREATE TABLE IF NOT EXISTS "experiment_runs" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "experiment_id" integer NOT NULL, "provider_key" varchar NOT NULL, "model" varchar NOT NULL, "status" varchar DEFAULT 'pending' NOT NULL, "response_text" text, "tokens_in" integer, "tokens_out" integer, "estimated_cost" float, "duration_ms" integer, "error_message" text, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_6c02fc6d5d"
 FOREIGN KEY ("experiment_id")
   REFERENCES "experiments" ("id")
@@ -76,7 +67,18 @@ CREATE INDEX "index_experiments_on_session_id" ON "experiments" ("session_id") /
 CREATE TABLE IF NOT EXISTS "import_runs" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "status" varchar DEFAULT 'running' NOT NULL, "started_at" datetime(6) NOT NULL, "completed_at" datetime(6), "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
 CREATE INDEX "index_import_runs_on_status" ON "import_runs" ("status") /*application='Recall'*/;
 CREATE INDEX "index_import_runs_on_completed_at" ON "import_runs" ("completed_at") /*application='Recall'*/;
+CREATE TABLE IF NOT EXISTS "session_summaries" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "session_id" integer NOT NULL, "body" text NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "title" varchar, "experiment_run_id" integer, CONSTRAINT "fk_rails_3c0482b265"
+FOREIGN KEY ("session_id")
+  REFERENCES "sessions" ("id")
+, CONSTRAINT "fk_rails_af1710e7be"
+FOREIGN KEY ("experiment_run_id")
+  REFERENCES "experiment_runs" ("id")
+);
+CREATE INDEX "index_session_summaries_on_session_id" ON "session_summaries" ("session_id") /*application='Recall'*/;
+CREATE INDEX "index_session_summaries_on_experiment_run_id" ON "session_summaries" ("experiment_run_id") /*application='Recall'*/;
 INSERT INTO "schema_migrations" (version) VALUES
+('20260406202419'),
+('20260406201105'),
 ('20260406120000'),
 ('20260406105320'),
 ('20260406105036'),
