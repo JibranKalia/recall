@@ -76,6 +76,11 @@ module Recall
         session_attrs = extract_session_attrs(entries, path, checksum, size)
         return if session_attrs.nil?
 
+        if Session::Tombstone.tombstoned?(session_attrs[:external_id])
+          @stats[:skipped] += 1
+          return
+        end
+
         session = with_retry do
           ActiveRecord::Base.transaction do
             if existing

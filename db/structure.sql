@@ -76,7 +76,10 @@ FOREIGN KEY ("experiment_run_id")
 );
 CREATE INDEX "index_session_summaries_on_session_id" ON "session_summaries" ("session_id") /*application='Recall'*/;
 CREATE INDEX "index_session_summaries_on_experiment_run_id" ON "session_summaries" ("experiment_run_id") /*application='Recall'*/;
+CREATE TABLE IF NOT EXISTS "session_tombstones" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "external_id" varchar NOT NULL, "reason" varchar, "original_title" varchar, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
+CREATE UNIQUE INDEX "index_session_tombstones_on_external_id" ON "session_tombstones" ("external_id") /*application='Recall'*/;
 INSERT INTO "schema_migrations" (version) VALUES
+('20260406203818'),
 ('20260406202419'),
 ('20260406201105'),
 ('20260406120000'),

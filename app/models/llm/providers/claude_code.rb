@@ -22,7 +22,7 @@ class LLM::Providers::ClaudeCode < LLM::Provider
 
     full_prompt = system ? "#{system}\n\n#{prompt}" : prompt
 
-    cmd = [ "claude", "-p", "--model", @model, "--output-format", "json" ]
+    cmd = [ "claude", "-p", "--model", @model, "--output-format", "json", "--no-session-persistence" ]
     env = work_dir? ? { "CLAUDE_CONFIG_DIR" => File.expand_path("~/.claude-work") } : {}
     stdout, stderr, status = Open3.capture3(env, *cmd, stdin_data: full_prompt)
 
