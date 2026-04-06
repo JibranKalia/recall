@@ -86,7 +86,7 @@ module Recall
 
         @logger.info "[Summarizer] Session #{@session.id}: chunk #{i + 1}/#{total_chunks} done (#{run.duration_formatted}, #{chunk.size} msgs)"
 
-        summary_so_far = [ summary_so_far, run.response_text ].compact.join("\n")
+        summary_so_far = [ summary_so_far, strip_thinking_tags(run.response_text) ].compact.join("\n")
       end
 
       summary_so_far
@@ -113,7 +113,7 @@ module Recall
 
       return nil if run.response_text.blank?
 
-      run.response_text.delete_prefix('"').delete_suffix('"').truncate(200)
+      strip_thinking_tags(run.response_text).delete_prefix('"').delete_suffix('"').truncate(200)
     end
 
     def chunk_system_prompt(summary_so_far)
@@ -160,6 +160,12 @@ module Recall
           end
         end
       end
+    end
+
+    # Qwen3 models emit <think>...</think> blocks by default.
+    # Strip them from summaries/titles but preserve in experiment runs.
+    def strip_thinking_tags(text)
+      text.gsub(%r{<think>.*?</think>}m, "").strip
     end
 
     def tool_only?(message)
