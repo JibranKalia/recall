@@ -56,6 +56,12 @@ class ExperimentsController < ApplicationController
     redirect_to @experiment
   end
 
+  def destroy
+    @experiment = Experiment.find(params[:id])
+    @experiment.destroy!
+    redirect_to experiments_path
+  end
+
   def destroy_run
     @experiment = Experiment.find(params[:id])
     run = @experiment.runs.find(params[:run_id])

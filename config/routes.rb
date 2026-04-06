@@ -8,7 +8,7 @@ Rails.application.routes.draw do
   end
   get "search", to: "search#index"
 
-  resources :experiments, only: [:index, :show, :new, :create] do
+  resources :experiments, only: [:index, :show, :new, :create, :destroy] do
     post :run_model, on: :member
     post :rerun, on: :member
     delete :destroy_run, on: :member

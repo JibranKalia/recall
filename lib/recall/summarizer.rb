@@ -1,6 +1,5 @@
 module Recall
   class Summarizer
-    MESSAGES_PER_CHUNK = 50
     # ~400K chars ≈ 100K tokens, fits 128K context non-local models.
     # Local (Ollama) models will NOT work with this chunk size.
     MAX_CHUNK_CHARS = 400_000
@@ -67,7 +66,7 @@ module Recall
       messages = @session.messages.includes(:content).where.not(role: "tool_result").order(:position)
       return nil if messages.empty?
 
-      chunks = messages.each_slice(MESSAGES_PER_CHUNK).to_a
+      chunks = chunk_by_chars(messages)
       total_chunks = chunks.size
       @logger.info "[Summarizer] Session #{@session.id}: #{messages.size} messages -> #{total_chunks} chunks"
       summary_so_far = nil
@@ -133,32 +132,54 @@ module Recall
         end
 
         p.instructions <<~TEXT.strip
-          Summarize this portion as bullet points focusing on OUTCOMES, not process:
-          - Decisions made and why
-          - Artifacts created or modified (files, diagrams, specs, queries)
+          Summarize this portion as bullet points. Focus on what was LEARNED, DECIDED, or PRODUCED — not the back-and-forth process.
+
+          Capture whichever apply:
+          - Decisions made and their rationale
+          - Code or artifacts created, modified, or deleted
           - Technical designs, architecture choices, and trade-offs
-          - Problems solved and how
+          - Bugs, root causes, or incorrect assumptions uncovered
+          - Code review findings and recommendations given
+          - Key facts or constraints discovered during investigation
+          - Corrections to earlier understanding (what changed and why)
         TEXT
 
         p.rules <<~TEXT.strip
           - Never use "User asked" / "Assistant provided" / "User requested" phrasing
-          - Write in past tense, action-oriented voice (e.g. "Designed enrichment pipeline with 4 layers" not "User asked for a pipeline design")
+          - Write in past tense, action-oriented voice (e.g. "Identified latent bug in legacy cancellation path" not "User asked about cancellation behavior")
           - Group related items together rather than listing chronologically
           - Do not repeat information already covered in the prior summary
+          - Never use emojis
           - Output only bullet points, no preamble
         TEXT
       end
     end
 
-    def format_messages(messages)
-      meaningful = messages.reject { |m| tool_only?(m) }
-      per_message = MAX_CHUNK_CHARS / [meaningful.size, 1].max
+    def chunk_by_chars(messages)
+      chunks = []
+      current_chunk = []
+      current_size = 0
 
+      messages.each do |m|
+        next if tool_only?(m)
+        size = m.content_text.to_s.size
+        if current_chunk.any? && current_size + size > MAX_CHUNK_CHARS
+          chunks << current_chunk
+          current_chunk = []
+          current_size = 0
+        end
+        current_chunk << m
+        current_size += size
+      end
+      chunks << current_chunk if current_chunk.any?
+      chunks
+    end
+
+    def format_messages(messages)
       LLM::PromptBuilder.build do |p|
         p.conversation do |c|
-          meaningful.each do |m|
-            text = m.content_text.to_s.truncate(per_message)
-            c.send(m.role.to_sym, text)
+          messages.each do |m|
+            c.send(m.role.to_sym, m.content_text.to_s)
           end
         end
       end

@@ -1,4 +1,10 @@
 /* ── Experiments ── */
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .page-header-row {
   display: flex;
   justify-content: space-between;
@@ -73,6 +79,50 @@
   min-width: 0;
   flex: 1;
   text-align: left;
+}
+
+.experiment-session-filter {
+  color: var(--text-dim);
+  opacity: 0;
+  margin-left: 0.375rem;
+  line-height: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.experiment-session-summary:hover .experiment-session-filter {
+  opacity: 1;
+}
+
+.experiment-session-filter:hover {
+  color: var(--primary);
+}
+
+.experiment-card-wrapper {
+  position: relative;
+}
+
+.experiment-delete-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  line-height: 0;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  z-index: 1;
+}
+
+.experiment-card-wrapper:hover .experiment-delete-btn {
+  opacity: 1;
+}
+
+.experiment-delete-btn:hover {
+  color: #dc3545;
 }
 
 .experiment-session-meta {
