@@ -1,7 +1,9 @@
 module Recall
   class Summarizer
     MESSAGES_PER_CHUNK = 50
-    MAX_CHUNK_CHARS = 24_000
+    # ~400K chars ≈ 100K tokens, fits 128K context non-local models.
+    # Local (Ollama) models will NOT work with this chunk size.
+    MAX_CHUNK_CHARS = 400_000
 
     def self.generate(session)
       new(session).generate
