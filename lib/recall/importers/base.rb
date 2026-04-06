@@ -75,13 +75,15 @@ module Recall
         session_attrs = extract_session_attrs(entries, path, checksum, size)
         return if session_attrs.nil?
 
-        ActiveRecord::Base.transaction do
+        session = ActiveRecord::Base.transaction do
           if existing
             update_session(existing, entries, session_attrs, checksum, size)
           else
             create_session(entries, session_attrs)
           end
         end
+
+        generate_title(session) if session
 
         @stats[:imported] += 1
       end
@@ -93,7 +95,7 @@ module Recall
         session.create_source!(source_attrs)
         insert_messages(session, extract_messages(entries))
         update_session_timestamps(session)
-        generate_title(session)
+        session
       end
 
       def update_session(session, entries, session_attrs, checksum, size)
@@ -130,7 +132,7 @@ module Recall
         end
 
         update_session_timestamps(session)
-        generate_title(session) if new_content
+        session if new_content
       end
 
       def insert_messages(session, messages)
