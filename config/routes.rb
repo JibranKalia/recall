@@ -9,8 +9,9 @@ Rails.application.routes.draw do
   get "search", to: "search#index"
 
   resources :experiments, only: [:index, :show, :new, :create] do
-    post :add_provider, on: :member
+    post :run_model, on: :member
     post :rerun, on: :member
+    delete :destroy_run, on: :member
   end
 
   post "import", to: "imports#create"

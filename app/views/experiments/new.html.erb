@@ -23,14 +23,19 @@
 
   <div class="form-group">
     <label class="form-label">Providers</label>
-    <div class="provider-checkboxes">
-      <% @available_providers.each do |key| %>
-        <label class="provider-checkbox">
-          <input type="checkbox" name="provider_keys[]" value="<%= key %>" <%= "checked" if key == "ollama" %>>
-          <span class="provider-checkbox-label"><%= key %></span>
-        </label>
-      <% end %>
-    </div>
+    <% LLM.provider_groups.each do |group_name, keys| %>
+      <div class="provider-group">
+        <span class="provider-group-label"><%= group_name %> <span class="provider-group-hint">&mdash; <%= LLM::TIER_HINTS[group_name] %></span></span>
+        <div class="provider-checkbox-grid">
+          <% keys.each do |key| %>
+            <label class="provider-checkbox-card">
+              <input type="checkbox" name="provider_keys[]" value="<%= key %>">
+              <span class="provider-checkbox-name"><%= key.sub(/\A[^:]+:/, "") %></span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
   </div>
 
   <div class="form-actions">

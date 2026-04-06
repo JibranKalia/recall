@@ -56,18 +56,30 @@ class ExperimentsController < ApplicationController
     redirect_to @experiment
   end
 
-  def add_provider
+  def destroy_run
     @experiment = Experiment.find(params[:id])
-    key = params[:provider_key]
+    run = @experiment.runs.find(params[:run_id])
+    run.destroy!
+    @experiment.check_completion!
 
-    provider = LLM.provider(key)
-    run = @experiment.runs.create!(
-      provider_key: key,
-      model: provider.model,
-      status: "pending"
-    )
-    @experiment.update!(status: "running")
-    RunProviderJob.perform_later(run)
+    redirect_to @experiment
+  end
+
+  def run_model
+    @experiment = Experiment.find(params[:id])
+    keys = params[:provider_keys]&.reject(&:blank?) || []
+
+    keys.each do |key|
+      provider = LLM.provider(key)
+      run = @experiment.runs.create!(
+        provider_key: key,
+        model: provider.model,
+        status: "pending"
+      )
+      RunProviderJob.perform_later(run)
+    end
+
+    @experiment.update!(status: "running") if keys.any?
 
     redirect_to @experiment
   end

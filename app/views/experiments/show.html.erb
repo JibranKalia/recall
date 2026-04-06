@@ -28,14 +28,23 @@
   </details>
 </div>
 
-<div class="experiment-add-provider">
-  <%= form_with url: add_provider_experiment_path(@experiment), method: :post, class: "add-provider-form" do %>
-    <select name="provider_key" class="form-select">
-      <% LLM::PROVIDERS.keys.each do |key| %>
-        <option value="<%= key %>"><%= key %></option>
-      <% end %>
-    </select>
-    <button type="submit" class="btn btn-secondary btn-sm">Run Provider</button>
+<div class="experiment-run-models">
+  <%= form_with url: run_model_experiment_path(@experiment), method: :post, class: "run-models-form" do %>
+    <% existing_keys = @experiment.runs.pluck(:provider_key) %>
+    <% LLM.provider_groups.each do |group_name, keys| %>
+      <div class="provider-group">
+        <span class="provider-group-label"><%= group_name %> <span class="provider-group-hint">&mdash; <%= LLM::TIER_HINTS[group_name] %></span></span>
+        <div class="provider-checkbox-grid">
+          <% keys.each do |key| %>
+            <label class="provider-checkbox-card <%= 'already-run' if existing_keys.include?(key) %>">
+              <input type="checkbox" name="provider_keys[]" value="<%= key %>">
+              <span class="provider-checkbox-name"><%= key.sub(/\A[^:]+:/, "") %></span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+    <button type="submit" class="btn btn-primary btn-sm">Run Selected</button>
   <% end %>
 </div>
 

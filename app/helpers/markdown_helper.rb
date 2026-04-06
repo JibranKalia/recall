@@ -7,8 +7,7 @@ module MarkdownHelper
 
   def render_markdown(text)
     return "".html_safe if text.blank?
-    text = text.scrub("")
-    markdown_renderer.render(text).html_safe
+    markdown_renderer.render(text.scrub("")).scrub("").html_safe
   end
 
   def self.renderer
