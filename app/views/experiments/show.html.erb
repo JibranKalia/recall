@@ -5,6 +5,11 @@
 <div class="experiment-header">
   <div class="experiment-title-row">
     <h1 class="page-title"><%= @experiment.name %></h1>
+    <% if @experiment.session %>
+      <%= link_to session_path(@experiment.session), class: "btn btn-ghost btn-sm" do %>
+        Session: <%= @experiment.session.display_title.truncate(40) %>
+      <% end %>
+    <% end %>
     <div id="experiment_status">
       <%= render "experiments/status", experiment: @experiment %>
     </div>
@@ -30,7 +35,7 @@
         <option value="<%= key %>"><%= key %></option>
       <% end %>
     </select>
-    <button type="submit" class="btn btn-secondary btn-sm">+ Add Provider</button>
+    <button type="submit" class="btn btn-secondary btn-sm">Run Provider</button>
   <% end %>
 </div>
 

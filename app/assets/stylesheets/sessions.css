@@ -191,6 +191,17 @@
   border-color: rgba(0, 166, 126, 0.2);
 }
 
+.session-meta-tag--experiments {
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.session-meta-tag--experiments:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
 /* ── Actions Row ── */
 .session-actions-row {
   display: flex;

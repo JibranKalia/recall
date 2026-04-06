@@ -6,20 +6,33 @@
   <%= link_to "New Experiment", new_experiment_path, class: "btn btn-primary" %>
 </div>
 
-<% if @experiments.any? %>
-  <div class="experiments-list">
-    <% @experiments.each do |experiment| %>
-      <%= link_to experiment_path(experiment), class: "card experiment-card" do %>
-        <div class="experiment-card-header">
-          <span class="experiment-card-name"><%= experiment.name %></span>
-          <span class="experiment-status-badge experiment-status-<%= experiment.status %>"><%= experiment.status %></span>
+<% if @grouped.any? %>
+  <div class="experiment-sessions-list">
+    <% @grouped.each do |session, experiments| %>
+      <details class="experiment-session-group">
+        <summary class="experiment-session-summary">
+          <span class="experiment-session-title"><%= session.display_title.truncate(80) %></span>
+          <span class="experiment-session-meta">
+            <span class="experiment-session-count"><%= experiments.size %> experiments</span>
+            <span class="text-dim text-xs"><%= time_ago_in_words(experiments.first.created_at) %> ago</span>
+          </span>
+        </summary>
+        <div class="experiments-list">
+          <% experiments.each do |experiment| %>
+            <%= link_to experiment_path(experiment), class: "card experiment-card" do %>
+              <div class="experiment-card-header">
+                <span class="experiment-card-name"><%= experiment.name %></span>
+                <span class="experiment-status-badge experiment-status-<%= experiment.status %>"><%= experiment.status %></span>
+              </div>
+              <div class="experiment-card-prompt"><%= experiment.prompt_text.truncate(120) %></div>
+              <div class="experiment-card-footer">
+                <span class="text-dim text-xs"><%= experiment.runs.size %> runs</span>
+                <span class="text-dim text-xs"><%= time_ago_in_words(experiment.created_at) %> ago</span>
+              </div>
+            <% end %>
+          <% end %>
         </div>
-        <div class="experiment-card-prompt"><%= experiment.prompt_text.truncate(120) %></div>
-        <div class="experiment-card-footer">
-          <span class="text-dim text-xs"><%= experiment.runs.count %> runs</span>
-          <span class="text-dim text-xs"><%= time_ago_in_words(experiment.created_at) %> ago</span>
-        </div>
-      <% end %>
+      </details>
     <% end %>
   </div>
 <% else %>

@@ -68,8 +68,14 @@ FOREIGN KEY ("experiment_id")
   REFERENCES "experiments" ("id")
 );
 CREATE INDEX "index_experiment_runs_on_experiment_id" ON "experiment_runs" ("experiment_id") /*application='Recall'*/;
-CREATE TABLE IF NOT EXISTS "experiments" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "name" varchar NOT NULL, "prompt_text" text NOT NULL, "system_prompt" text, "status" varchar DEFAULT 'pending' NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
+CREATE TABLE IF NOT EXISTS "experiments" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "name" varchar NOT NULL, "prompt_text" text NOT NULL, "system_prompt" text, "status" varchar DEFAULT 'pending' NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "session_id" integer NOT NULL, CONSTRAINT "fk_rails_5b2527e447"
+FOREIGN KEY ("session_id")
+  REFERENCES "sessions" ("id")
+);
+CREATE INDEX "index_experiments_on_session_id" ON "experiments" ("session_id") /*application='Recall'*/;
 INSERT INTO "schema_migrations" (version) VALUES
+('20260406105320'),
+('20260406105036'),
 ('20260406031055'),
 ('20260406030624'),
 ('20260406025408'),

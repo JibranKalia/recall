@@ -3,6 +3,7 @@ class Session < ApplicationRecord
   has_many :messages, dependent: :destroy
   has_many :token_usages, through: :messages
   has_many :summaries, dependent: :destroy
+  has_many :experiments, dependent: :nullify
   has_one :source, dependent: :destroy
 
   validates :external_id, presence: true, uniqueness: true

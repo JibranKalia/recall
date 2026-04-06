@@ -18,6 +18,15 @@
   --accent: #00A67E;
   --accent-hover: #008f6c;
   --accent-dim: rgba(0, 166, 126, 0.1);
+  --primary: #00A67E;
+  --primary-hover: #008f6c;
+  --primary-dim: rgba(0, 166, 126, 0.1);
+  --secondary: #2563eb;
+  --secondary-hover: #1d4ed8;
+  --secondary-dim: rgba(37, 99, 235, 0.1);
+  --tertiary: #7c3aed;
+  --tertiary-hover: #6d28d9;
+  --tertiary-dim: rgba(124, 58, 237, 0.1);
   --green: #00A67E;
   --green-dim: rgba(0, 166, 126, 0.08);
   --blue: #2563eb;

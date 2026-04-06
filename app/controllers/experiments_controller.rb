@@ -1,6 +1,8 @@
 class ExperimentsController < ApplicationController
   def index
-    @experiments = Experiment.recent.limit(50)
+    scope = Experiment.includes(:session, :runs).recent
+    scope = scope.where(session_id: params[:session_id]) if params[:session_id].present?
+    @grouped = scope.limit(200).group_by(&:session)
   end
 
   def show
@@ -8,8 +10,9 @@ class ExperimentsController < ApplicationController
   end
 
   def new
-    @experiment = Experiment.new
+    @experiment = Experiment.new(session_id: params[:session_id])
     @available_providers = LLM::PROVIDERS.keys
+    @sessions = Session.recent.limit(50)
   end
 
   def create
@@ -19,6 +22,7 @@ class ExperimentsController < ApplicationController
       name: params[:experiment][:name],
       prompt_text: params[:experiment][:prompt_text],
       system_prompt: params[:experiment][:system_prompt].presence,
+      session_id: params[:experiment][:session_id].presence,
       status: "running"
     )
 

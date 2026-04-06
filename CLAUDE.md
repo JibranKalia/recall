@@ -40,7 +40,7 @@ bin/recall search "query"              # CLI search
 - **Session::Summary**: AI-generated summary with `body` and `title`. Table name is `session_summaries`.
 - **Session::Markdown**: non-DB model that renders a session as Markdown. Instantiated via `session.to_markdown`.
 - **TokenUsage**: per-message token breakdown — `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`, `model`. One-to-one with Message. Supports `estimated_cost` via rate card lookup.
-- **Experiment**: a prompt evaluated against one or more LLM providers. Has `name`, `prompt_text`, `system_prompt`, `status`. All LLM calls must go through `Experiment.complete!` (sync) or `RunProviderJob` (async) — never call `LLM::Provider` directly.
+- **Experiment**: a prompt evaluated against one or more LLM providers. Belongs to Session (required). Has `name`, `prompt_text`, `system_prompt`, `status`, `session_id`. All LLM calls must go through `Experiment.complete!` (sync) or `RunProviderJob` (async) — never call `LLM::Provider` directly.
 - **Experiment::Run**: one provider's execution of an experiment — `provider_key`, `model`, `status`, `response_text`, `tokens_in`, `tokens_out`, `estimated_cost`, `duration_ms`. Table name is `experiment_runs`.
 
 **LLM provider layer** (`app/models/llm/`):

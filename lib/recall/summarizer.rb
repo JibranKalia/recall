@@ -75,7 +75,8 @@ module Recall
           "Session #{@session.id} — summary chunk #{i + 1}/#{total_chunks}",
           prompt: format_messages(chunk),
           system: chunk_system_prompt(summary_so_far),
-          provider_key: @provider_key
+          provider_key: @provider_key,
+          session: @session
         )
 
         unless run.response_text.present?
@@ -106,7 +107,8 @@ module Recall
         "Session #{@session.id} — title generation",
         prompt: prompt,
         system: system,
-        provider_key: @provider_key
+        provider_key: @provider_key,
+        session: @session
       )
 
       return nil if run.response_text.blank?

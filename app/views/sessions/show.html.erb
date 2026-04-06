@@ -26,6 +26,11 @@
       <% if @session.estimated_cost_formatted %>
         <span class="session-meta-tag session-meta-tag--cost"><%= @session.estimated_cost_formatted %></span>
       <% end %>
+      <% if @session.experiments.any? %>
+        <%= link_to experiments_path(session_id: @session.id), class: "session-meta-tag session-meta-tag--experiments" do %>
+          <%= @session.experiments.size %> experiments
+        <% end %>
+      <% end %>
     </div>
 
     <div id="session_summary">

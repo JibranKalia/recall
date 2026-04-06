@@ -2,8 +2,7 @@ module LLM
   # Cost per token (USD). Local models are free.
   RATES = {
     "qwen2.5:14b" => { input: 0, output: 0 },
-    "llama3" => { input: 0, output: 0 },
-    "llama3.1" => { input: 0, output: 0 },
+    "gemma3:12b" => { input: 0, output: 0 },
     "claude-sonnet-4-20250514" => { input: 3.0 / 1_000_000, output: 15.0 / 1_000_000 },
     "claude-opus-4-20250514" => { input: 15.0 / 1_000_000, output: 75.0 / 1_000_000 },
     "claude-haiku-4-5-20251001" => { input: 0.80 / 1_000_000, output: 4.0 / 1_000_000 },
@@ -14,7 +13,7 @@ module LLM
   PROVIDERS = {
     "ollama" => -> { Providers::Ollama.new },
     "ollama:qwen2.5:14b" => -> { Providers::Ollama.new(model: "qwen2.5:14b") },
-    "ollama:llama3" => -> { Providers::Ollama.new(model: "llama3") },
+    "ollama:gemma3:12b" => -> { Providers::Ollama.new(model: "gemma3:12b") },
     "claude_code" => -> { Providers::ClaudeCode.new },
     "claude_code:opus" => -> { Providers::ClaudeCode.new(model: "claude-opus-4-20250514") },
     "claude_code:sonnet" => -> { Providers::ClaudeCode.new(model: "claude-sonnet-4-20250514") },

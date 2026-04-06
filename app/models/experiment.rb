@@ -1,4 +1,5 @@
 class Experiment < ApplicationRecord
+  belongs_to :session
   has_many :runs, class_name: "Experiment::Run", dependent: :destroy
   validates :name, :prompt_text, presence: true
   validates :status, inclusion: { in: %w[pending running completed failed] }
@@ -6,11 +7,12 @@ class Experiment < ApplicationRecord
   scope :recent, -> { order(created_at: :desc) }
 
   # Synchronous single-prompt call. Creates Experiment + Run, executes inline, returns the Run.
-  def self.complete!(name, prompt:, provider_key: "ollama", system: nil)
+  def self.complete!(name, prompt:, provider_key: "ollama", system: nil, session: nil)
     experiment = create!(
       name: name,
       prompt_text: prompt,
       system_prompt: system,
+      session: session,
       status: "running"
     )
 
