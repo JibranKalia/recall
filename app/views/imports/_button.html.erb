@@ -1,5 +1,8 @@
 <% last_import = ImportRun.last_completed_at %>
-<form id="import_btn" action="<%= import_path %>" method="post" data-controller="pending-btn" data-action="submit->pending-btn#submit">
+<form id="import_btn" action="<%= import_path %>" method="post"
+  data-controller="pending-btn auto-import"
+  data-action="submit->pending-btn#submit"
+  data-auto-import-last-import-at-value="<%= last_import&.iso8601 %>">
   <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
   <% if local_assigns[:session_id] %>
     <%= hidden_field_tag :session_id, session_id %>

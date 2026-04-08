@@ -8,7 +8,9 @@ class ImportsController < ApplicationController
       end
     end
 
-    ImportJob.perform_later
+    unless ImportRun.any_running? || SolidQueue::Job.where(class_name: "ImportJob", finished_at: nil).exists?
+      ImportJob.perform_later
+    end
 
     head :ok
   end
