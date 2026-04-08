@@ -8,7 +8,7 @@ class Session < ApplicationRecord
 
   validates :external_id, presence: true, uniqueness: true
 
-  after_save :sync_fts, if: -> { saved_change_to_title? || saved_change_to_custom_title? }
+  after_save :sync_fts, if: -> { saved_change_to_title? || saved_change_to_custom_title? || saved_change_to_external_id? }
   after_destroy :remove_from_fts
 
   scope :recent, -> { order(ended_at: :desc) }
@@ -56,16 +56,16 @@ class Session < ApplicationRecord
 
   def sync_fts
     conn = self.class.connection
-    conn.execute(sanitize_sql(["INSERT INTO sessions_fts(sessions_fts, rowid, title, custom_title, summary) VALUES ('delete', ?, ?, ?, ?)",
-      id, title_before_last_save, custom_title_before_last_save, nil]))
-    conn.execute(sanitize_sql(["INSERT INTO sessions_fts(rowid, title, custom_title, summary) VALUES (?, ?, ?, ?)",
-      id, title, custom_title, latest_summary&.body]))
+    conn.execute(sanitize_sql(["INSERT INTO sessions_fts(sessions_fts, rowid, title, custom_title, summary, external_id) VALUES ('delete', ?, ?, ?, ?, ?)",
+      id, title_before_last_save, custom_title_before_last_save, nil, external_id_before_last_save]))
+    conn.execute(sanitize_sql(["INSERT INTO sessions_fts(rowid, title, custom_title, summary, external_id) VALUES (?, ?, ?, ?, ?)",
+      id, title, custom_title, latest_summary&.body, external_id]))
   end
 
   def remove_from_fts
     self.class.connection.execute(sanitize_sql(
-      ["INSERT INTO sessions_fts(sessions_fts, rowid, title, custom_title, summary) VALUES ('delete', ?, ?, ?, ?)",
-        id, title, custom_title, latest_summary&.body]))
+      ["INSERT INTO sessions_fts(sessions_fts, rowid, title, custom_title, summary, external_id) VALUES ('delete', ?, ?, ?, ?, ?)",
+        id, title, custom_title, latest_summary&.body, external_id]))
   end
 
   def sanitize_sql(args)

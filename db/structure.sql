@@ -1,18 +1,5 @@
 CREATE TABLE IF NOT EXISTS "schema_migrations" ("version" varchar NOT NULL PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS "ar_internal_metadata" ("key" varchar NOT NULL PRIMARY KEY, "value" varchar, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
-CREATE VIRTUAL TABLE sessions_fts USING fts5(
-  title,
-  custom_title,
-  summary,
-  content='sessions',
-  content_rowid='id',
-  tokenize='porter unicode61'
-)
-/* sessions_fts(title,custom_title,summary) */;
-CREATE TABLE IF NOT EXISTS 'sessions_fts_data'(id INTEGER PRIMARY KEY, block BLOB);
-CREATE TABLE IF NOT EXISTS 'sessions_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS 'sessions_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
-CREATE TABLE IF NOT EXISTS 'sessions_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
 CREATE TABLE IF NOT EXISTS "projects" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "name" varchar NOT NULL, "path" varchar NOT NULL, "sessions_count" integer DEFAULT 0 NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "domain" varchar DEFAULT 'personal' NOT NULL /*application='Recall'*/);
 CREATE UNIQUE INDEX "index_projects_on_path" ON "projects" ("path") /*application='Recall'*/;
 CREATE TABLE IF NOT EXISTS "token_usages" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "message_id" integer NOT NULL, "input_tokens" integer DEFAULT 0 NOT NULL, "output_tokens" integer DEFAULT 0 NOT NULL, "cache_creation_input_tokens" integer DEFAULT 0 NOT NULL, "cache_read_input_tokens" integer DEFAULT 0 NOT NULL, "model" varchar, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_003a7b46d9"
@@ -78,7 +65,22 @@ CREATE INDEX "index_session_summaries_on_session_id" ON "session_summaries" ("se
 CREATE INDEX "index_session_summaries_on_experiment_run_id" ON "session_summaries" ("experiment_run_id") /*application='Recall'*/;
 CREATE TABLE IF NOT EXISTS "session_tombstones" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "external_id" varchar NOT NULL, "reason" varchar, "original_title" varchar, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
 CREATE UNIQUE INDEX "index_session_tombstones_on_external_id" ON "session_tombstones" ("external_id") /*application='Recall'*/;
+CREATE VIRTUAL TABLE sessions_fts USING fts5(
+  title,
+  custom_title,
+  summary,
+  external_id,
+  content='sessions',
+  content_rowid='id',
+  tokenize='porter unicode61'
+)
+/* sessions_fts(title,custom_title,summary,external_id) */;
+CREATE TABLE IF NOT EXISTS 'sessions_fts_data'(id INTEGER PRIMARY KEY, block BLOB);
+CREATE TABLE IF NOT EXISTS 'sessions_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS 'sessions_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
+CREATE TABLE IF NOT EXISTS 'sessions_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
 INSERT INTO "schema_migrations" (version) VALUES
+('20260408193404'),
 ('20260406203818'),
 ('20260406202419'),
 ('20260406201105'),
