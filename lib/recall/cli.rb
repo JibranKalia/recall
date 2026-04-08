@@ -144,16 +144,17 @@ class RecallCLI
 
     cst = ActiveSupport::TimeZone["America/Chicago"]
     if @options[:from]
-      scope = scope.where("sessions.started_at >= ?", cst.parse(@options[:from]).beginning_of_day)
+      scope = scope.where("sessions.ended_at >= ?", cst.parse(@options[:from]).beginning_of_day)
     end
     if @options[:to]
-      scope = scope.where("sessions.started_at <= ?", cst.parse(@options[:to]).end_of_day)
+      scope = scope.where("sessions.ended_at <= ?", cst.parse(@options[:to]).end_of_day)
     end
 
+    puts "  #{scope.count} sessions"
     puts "  #{'ID'.ljust(6)} #{'Date'.ljust(16)} Title"
     puts "  #{'—' * 6} #{'—' * 16} #{'—' * 40}"
     scope.limit(limit).each do |s|
-      date = s.started_at&.in_time_zone("America/Chicago")&.strftime("%Y-%m-%d %H:%M") || "unknown"
+      date = s.ended_at&.in_time_zone("America/Chicago")&.strftime("%Y-%m-%d %H:%M") || "unknown"
       title = s.display_title.gsub(/\s+/, " ").truncate(80)
       puts "  #{s.id.to_s.ljust(6)} #{date.ljust(16)} #{title}"
     end
