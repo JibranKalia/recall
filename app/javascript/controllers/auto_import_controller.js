@@ -4,7 +4,7 @@ import { Controller } from "@hotwired/stimulus"
 // Submits to the base URL (no session_id) for a full import,
 // even on session pages where manual clicks include session_id.
 // The backend guards against duplicate runs, so multiple tabs are safe.
-const STALE_MS = 30 * 60 * 1000 // 30 minutes
+const STALE_MS = 15 * 60 * 1000 // 15 minutes
 
 export default class extends Controller {
   static values = { lastImportAt: String, url: String }
