@@ -38,14 +38,12 @@ module Recall
       @logger.info "[Summarizer] Starting session #{@session.id} (#{msg_count} messages)"
       start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-      body = summarize
+      body, title = summarize
       if body.blank?
         @logger.warn "[Summarizer] Session #{@session.id}: summarize returned blank"
         return nil
       end
 
-      @logger.info "[Summarizer] Session #{@session.id}: generating title..."
-      title = generate_title(body)
       if title.blank?
         @logger.warn "[Summarizer] Session #{@session.id}: title generation returned blank"
         return nil
@@ -62,9 +60,10 @@ module Recall
 
     private
 
+    # Returns [body, title]
     def summarize
       messages = @session.messages.includes(:content).where.not(role: "tool_result").order(:position)
-      return nil if messages.empty?
+      return [ nil, nil ] if messages.empty?
 
       chunks = chunk_by_chars(messages)
       total_chunks = chunks.size
@@ -72,10 +71,12 @@ module Recall
       summary_so_far = nil
 
       chunks.each_with_index do |chunk, i|
+        last_chunk = (i == total_chunks - 1)
+
         run = Experiment.complete!(
-          "Session #{@session.id} — summary chunk #{i + 1}/#{total_chunks}",
+          "Session #{@session.id} — summary#{last_chunk ? ' + title' : ''} chunk #{i + 1}/#{total_chunks}",
           prompt: format_messages(chunk),
-          system: chunk_system_prompt(summary_so_far),
+          system: chunk_system_prompt(summary_so_far, include_title: last_chunk),
           provider_key: @provider_key,
           session: @session
         )
@@ -87,38 +88,22 @@ module Recall
 
         @logger.info "[Summarizer] Session #{@session.id}: chunk #{i + 1}/#{total_chunks} done (#{run.duration_formatted}, #{chunk.size} msgs)"
 
-        summary_so_far = [ summary_so_far, strip_thinking_tags(run.response_text) ].compact.join("\n")
+        response = strip_thinking_tags(run.response_text)
+
+        if last_chunk
+          @last_run = run
+          body, title = parse_summary_and_title(response)
+          summary_so_far = [ summary_so_far, body ].compact.join("\n")
+          return [ summary_so_far, title&.truncate(200) ]
+        else
+          summary_so_far = [ summary_so_far, response ].compact.join("\n")
+        end
       end
 
-      summary_so_far
+      [ summary_so_far, nil ]
     end
 
-    def generate_title(body)
-      system = LLM::PromptBuilder.build do |p|
-        p.text "You are a conversation summarizer."
-        p.instructions "Given a summary of a conversation between a user and an AI coding assistant, generate a descriptive title (up to 15 words) that captures the main intent, topic, and outcome."
-        p.rules "- Output only the title, no quotes, no preamble"
-      end
-
-      prompt = LLM::PromptBuilder.build do |p|
-        p.summary body
-      end
-
-      run = Experiment.complete!(
-        "Session #{@session.id} — title generation",
-        prompt: prompt,
-        system: system,
-        provider_key: @provider_key,
-        session: @session
-      )
-
-      return nil if run.response_text.blank?
-
-      @last_run = run
-      strip_thinking_tags(run.response_text).delete_prefix('"').delete_suffix('"').truncate(200)
-    end
-
-    def chunk_system_prompt(summary_so_far)
+    def chunk_system_prompt(summary_so_far, include_title: false)
       LLM::PromptBuilder.build do |p|
         p.text "You are a conversation summarizer. You will receive a portion of a conversation between a user and an AI coding assistant."
 
@@ -151,9 +136,35 @@ module Recall
           - Group related items together rather than listing chronologically
           - Do not repeat information already covered in the prior summary
           - Never use emojis
-          - Output only bullet points, no preamble
         TEXT
+
+        if include_title
+          p.output_format <<~TEXT.strip
+            Wrap your output in XML tags:
+
+            <summary>
+            - bullet points here
+            </summary>
+            <title>descriptive title up to 15 words</title>
+
+            The title should capture the main intent, topic, and outcome of the ENTIRE conversation (including any prior summary above).
+            Output no quotes or preamble — only the two XML blocks.
+          TEXT
+        else
+          p.rules "- Output only bullet points, no preamble"
+        end
       end
+    end
+
+    def parse_summary_and_title(response)
+      summary = response[%r{<summary>\s*(.*?)\s*</summary>}m, 1]
+      title = response[%r{<title>\s*(.*?)\s*</title>}m, 1]
+
+      # Fall back to treating entire response as summary if no XML tags found
+      summary = response unless summary.present?
+      title = title&.delete_prefix('"')&.delete_suffix('"')
+
+      [ summary, title ]
     end
 
     def chunk_by_chars(messages)
