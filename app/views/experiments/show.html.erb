@@ -1,3 +1,4 @@
+<% content_for(:title, "#{@experiment.name} — Recall") %>
 <%= turbo_stream_from @experiment %>
 
 <%= link_to "&larr; Experiments".html_safe, experiments_path, class: "back-link" %>

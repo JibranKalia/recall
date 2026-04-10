@@ -1,3 +1,4 @@
+<% content_for(:title, "#{@session.display_title} — Recall") %>
 <%= turbo_stream_from @session %>
 <div data-controller="sticky-header">
   <div class="session-header" data-sticky-header-target="header">
