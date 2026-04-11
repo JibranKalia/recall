@@ -1,4 +1,6 @@
-<div id="run_<%= run.id %>" class="run-card run-status-<%= run.status %>">
+<div id="run_<%= run.id %>" class="run-card run-status-<%= run.status %>"
+     data-controller="run-modal"
+     data-action="click->run-modal#open keydown.esc@document->run-modal#closeKey">
   <%= button_to destroy_run_experiment_path(run.experiment, run_id: run.id), method: :delete, class: "run-delete-btn", data: { turbo_confirm: "Delete this run?" }, title: "Delete run" do %>
     <%= icon_tag(:trash) %>
   <% end %>
@@ -25,6 +27,33 @@
       </span>
     </div>
     <div class="run-response prose"><%= render_markdown(run.response_text || "") %></div>
+
+    <div class="run-modal-overlay" data-run-modal-target="modal" data-action="click->run-modal#close">
+      <div class="run-modal">
+        <div class="run-modal-header">
+          <span class="run-provider-name"><%= run.provider_key %></span>
+          <span class="run-model-tag"><%= run.model %></span>
+          <div class="run-metrics" style="border: none; padding: 0;">
+            <span class="run-metric">
+              <span class="run-metric-label">Time</span>
+              <span class="run-metric-value"><%= run.duration_formatted %></span>
+            </span>
+            <span class="run-metric">
+              <span class="run-metric-label">Tokens</span>
+              <span class="run-metric-value"><%= number_with_delimiter(run.tokens_in) %> / <%= number_with_delimiter(run.tokens_out) %></span>
+            </span>
+            <span class="run-metric">
+              <span class="run-metric-label">Cost</span>
+              <span class="run-metric-value"><%= run.cost_formatted || "free" %></span>
+            </span>
+          </div>
+          <button class="run-modal-close" data-action="click->run-modal#close">&times;</button>
+        </div>
+        <div class="run-modal-body prose">
+          <%= render_markdown(run.response_text || "") %>
+        </div>
+      </div>
+    </div>
   <% elsif run.failed? %>
     <div class="run-error"><%= run.error_message %></div>
   <% else %>

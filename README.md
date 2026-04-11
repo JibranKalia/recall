@@ -1,62 +1,53 @@
 # Recall
 
-Search and browse your archived AI conversations. Imports sessions from **Claude Code** and **OpenAI Codex**, indexes them with SQLite FTS5 full-text search, and serves a web UI and CLI for finding past conversations.
+Your AI conversations disappear into `~/.claude/` and `~/.codex/` as scattered JSONL files. Recall pulls them into one place, indexes everything with full-text search, and gives you a web UI and CLI to actually find things again.
 
-## Features
+## The problem
 
-- **Full-text search** across all your AI conversations with highlighted snippets
-- **Multi-source import** — Claude Code (`~/.claude/projects/`) and OpenAI Codex (`~/.codex/sessions/`)
-- **Checksum-based dedup** — re-run imports without duplicating data
-- **Web UI** — browse projects, sessions, and messages with search and filtering
-- **CLI** — search, import, and inspect from the terminal
+You've had hundreds of conversations with Claude Code and Codex. You *know* you solved that exact problem three weeks ago, but good luck finding it. The session files are opaque, spread across project directories, and unsearchable. And when you do find one, try copying a full conversation out of the terminal -- good luck with that too.
 
-## Quick Start
+## What Recall does
 
-```bash
-bin/setup              # Install deps, prepare DB
-bin/rails recall:import   # Import conversations
-bin/dev                # Start dev server (http://localhost:3000)
-```
+**Imports** conversations from Claude Code and OpenAI Codex into a single SQLite database. **Indexes** every message with FTS5 full-text search. **Serves** a web UI for browsing and a CLI for quick lookups.
 
-## Architecture
+- **Markdown export** -- every session has a one-click Markdown copy button, so you can grab an entire conversation cleanly instead of fighting terminal selection
+- **Search across everything** -- find that conversation where you debugged the OAuth flow, with highlighted snippets showing exactly where the match is
+- **Browse by project** -- conversations grouped by the repo/directory they happened in
+- **Auto-generated titles and summaries** -- sessions get titles via a local LLM (Ollama) so you're not staring at "Untitled session" everywhere
+- **Experiments** -- compare prompts across LLM providers (Ollama, Claude, Codex, OpenCode) side-by-side with cost and speed tracking
+- **Incremental imports** -- checksum-based dedup means you can re-run imports without duplicating anything
+- **Works from anywhere** -- data lives in `~/.config/recall/`, so the CLI works regardless of your current directory
 
-Three models: **Project → Session → Message**.
-
-| Model | Description |
-|-------|-------------|
-| **Project** | A directory/repo that had conversations. Unique on `(path, source_type)`. |
-| **Session** | One conversation, imported from a JSONL file. Tracks checksum for dedup. |
-| **Message** | Single turn in a session. `content_text` is FTS5-indexed for search. |
-
-The import pipeline lives in `lib/recall/`:
-- `Importer` orchestrates imports from registered sources and rebuilds the FTS index.
-- `Importers::Base` provides checksum-based dedup, transactional imports, and UTF-8 sanitization.
-- Source-specific importers (`ClaudeCode`, `Codex`) handle file discovery and parsing.
-
-## CLI
+## Quick start
 
 ```bash
-bin/recall search "query"    # Search across all messages
-bin/recall import            # Import from all sources
-bin/recall stats             # Show import statistics
-bin/recall projects          # List projects
-bin/recall sessions          # List sessions
+git clone <this-repo>
+cd recall
+bin/setup                     # Install deps, create DB
+bin/rails recall:import       # Import your conversations
+bin/dev                       # Start the web UI at localhost:3000
 ```
 
-## Development
+Or use the CLI:
 
 ```bash
-bin/rails test               # Run tests
-bin/rails test:system        # System tests (Capybara + Selenium)
-bin/rubocop                  # Lint
-bin/brakeman                 # Security scan
+bin/recall search "OAuth token refresh"
+bin/recall projects
+bin/recall stats
 ```
 
-## Tech Stack
+## Supported sources
 
-- **Rails 8.1** / Ruby 3.4.5
-- **SQLite3 + FTS5** for storage and full-text search
-- **Hotwire** (Turbo + Stimulus) for the web UI
-- **Propshaft** for asset pipeline
-- **Solid Queue / Cache / Cable** for background jobs and caching
-- **Kamal + Docker** for deployment
+| Source | Location | What's imported |
+|--------|----------|-----------------|
+| Claude Code (personal) | `~/.claude/projects/**/*.jsonl` | Messages, tool calls, token usage |
+| Claude Code (work) | `~/.claude-work/projects/**/*.jsonl` | Same as above |
+| OpenAI Codex | `~/.codex/sessions/**/*.jsonl` | Messages, metadata from state DB |
+
+## Built with
+
+Rails 8.1, Ruby 3.4, SQLite3 + FTS5, Hotwire (Turbo + Stimulus), Solid Queue. No Postgres, no Redis, no external dependencies beyond a Ruby runtime.
+
+## License
+
+This is a personal tool shared as-is. No warranty, no support obligations.

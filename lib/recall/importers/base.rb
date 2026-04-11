@@ -208,11 +208,14 @@ module Recall
         end
       end
 
+      # Only re-summarize when the session has grown significantly (50%+ more messages)
+      RESUMMARIZE_GROWTH_FACTOR = 1.5
+
       def generate_title(session)
         latest = session.latest_summary
         if latest&.message_count
           current = session.messages.count
-          return if current < latest.message_count * 1.5
+          return if current < latest.message_count * RESUMMARIZE_GROWTH_FACTOR
         end
         GenerateSummaryJob.perform_later(session)
       end

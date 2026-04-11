@@ -37,10 +37,6 @@ CREATE VIRTUAL TABLE messages_fts USING fts5(
   tokenize='porter unicode61'
 )
 /* messages_fts(content_text) */;
-CREATE TABLE IF NOT EXISTS 'messages_fts_data'(id INTEGER PRIMARY KEY, block BLOB);
-CREATE TABLE IF NOT EXISTS 'messages_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS 'messages_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
-CREATE TABLE IF NOT EXISTS 'messages_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
 CREATE TABLE IF NOT EXISTS "experiment_runs" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "experiment_id" integer NOT NULL, "provider_key" varchar NOT NULL, "model" varchar NOT NULL, "status" varchar DEFAULT 'pending' NOT NULL, "response_text" text, "tokens_in" integer, "tokens_out" integer, "estimated_cost" float, "duration_ms" integer, "error_message" text, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_6c02fc6d5d"
 FOREIGN KEY ("experiment_id")
   REFERENCES "experiments" ("id")
@@ -75,10 +71,6 @@ CREATE VIRTUAL TABLE sessions_fts USING fts5(
   tokenize='porter unicode61'
 )
 /* sessions_fts(title,custom_title,summary,external_id) */;
-CREATE TABLE IF NOT EXISTS 'sessions_fts_data'(id INTEGER PRIMARY KEY, block BLOB);
-CREATE TABLE IF NOT EXISTS 'sessions_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS 'sessions_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
-CREATE TABLE IF NOT EXISTS 'sessions_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
 INSERT INTO "schema_migrations" (version) VALUES
 ('20260411145542'),
 ('20260408193404'),
