@@ -1,7 +1,6 @@
 module ApplicationHelper
   include MarkdownHelper
 
-  # CSS mask-based icon helper
   # icon_tag(:trash) => <span class="icon icon--trash" aria-hidden="true"></span>
   def icon_tag(name, **options)
     tag.span class: class_names("icon icon--#{name.to_s.tr('_', '-')}", options.delete(:class)), "aria-hidden": true, **options

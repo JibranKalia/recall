@@ -117,10 +117,8 @@
         </div>
       </div>
     <% else %>
-      <div id="msg-<%= message.id %>" class="message <%= message_css_class(message) %>" data-controller="message-copy">
-        <div data-message-copy-target="content">
-          <%= render_message_content(message) %>
-        </div>
+      <div id="msg-<%= message.id %>" class="message <%= message_css_class(message) %>">
+        <%= render_message_content(message) %>
       </div>
     <% end %>
   <% end %>

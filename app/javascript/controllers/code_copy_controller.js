@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { copyText } from "utils/clipboard"
 
 // Adds copy buttons to all <pre> code blocks within the element
 export default class extends Controller {
@@ -18,7 +19,7 @@ export default class extends Controller {
   }
 
   copy(btn, code) {
-    navigator.clipboard.writeText(code.textContent).then(() => {
+    copyText(code.textContent).then(() => {
       btn.textContent = "Copied!"
       btn.classList.add("copied")
       setTimeout(() => {

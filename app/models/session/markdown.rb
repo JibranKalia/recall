@@ -44,7 +44,7 @@ class Session::Markdown
       when "assistant"
         has_text = turn[:texts].any?
         has_thinking = thinking && turn[:thinking].any?
-        has_tools = turn[:tools].any?
+        has_tools = tool_details && turn[:tools].any?
 
         next unless has_text || has_thinking || has_tools
 
@@ -63,6 +63,7 @@ class Session::Markdown
             lines << part[:text]
             lines << ""
           when :tool_use
+            next unless tool_details
             summary = tool_call_summary(part[:name], part[:input])
             line = "**Tool: #{part[:name]}**"
             line += " — `#{summary}`" if summary.present?

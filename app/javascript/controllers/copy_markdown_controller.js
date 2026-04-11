@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { copyText } from "utils/clipboard"
 
 export default class extends Controller {
   static targets = ["label", "menu"]
@@ -37,7 +38,7 @@ export default class extends Controller {
       if (!response.ok) throw new Error(response.statusText)
 
       const text = await response.text()
-      await this.#copyToClipboard(text)
+      await copyText(text)
 
       this.labelTarget.textContent = "Copied!"
       this.element.classList.add("copied")
@@ -57,19 +58,4 @@ export default class extends Controller {
     }
   }
 
-  async #copyToClipboard(text) {
-    if (navigator.clipboard?.writeText) {
-      return navigator.clipboard.writeText(text)
-    }
-
-    // Fallback for non-secure contexts (e.g. accessing dev via IP)
-    const textarea = document.createElement("textarea")
-    textarea.value = text
-    textarea.style.position = "fixed"
-    textarea.style.opacity = "0"
-    document.body.appendChild(textarea)
-    textarea.select()
-    document.execCommand("copy")
-    document.body.removeChild(textarea)
-  }
 }
