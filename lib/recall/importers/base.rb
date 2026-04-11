@@ -209,6 +209,11 @@ module Recall
       end
 
       def generate_title(session)
+        latest = session.latest_summary
+        if latest&.message_count
+          current = session.messages.count
+          return if current < latest.message_count * 1.5
+        end
         GenerateSummaryJob.perform_later(session)
       end
 
