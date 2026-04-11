@@ -62,7 +62,7 @@ module Recall
 
     # Returns [body, title]
     def summarize
-      messages = @session.messages.includes(:content).where.not(role: "tool_result").order(:position)
+      messages = @session.messages.for_summarization
       return [ nil, nil ] if messages.empty?
 
       chunks = chunk_by_chars(messages)
@@ -204,9 +204,7 @@ module Recall
     end
 
     def tool_only?(message)
-      return false unless message.role == "assistant"
-      text = message.content_text.to_s.strip
-      text.match?(/\A\[Tool: .+\]\z/)
+      message.tool_only?
     end
   end
 end

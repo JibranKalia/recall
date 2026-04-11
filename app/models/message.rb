@@ -9,6 +9,12 @@ class Message < ApplicationRecord
   validates :position, presence: true
 
   scope :ordered, -> { order(:position) }
+  scope :for_summarization, -> { includes(:content).where.not(role: "tool_result").ordered }
+
+  def tool_only?
+    return false unless role == "assistant"
+    content_text.to_s.strip.match?(/\A\[Tool: .+\]\z/)
+  end
 
   delegate :content_text, :content_json, to: :content, allow_nil: true
 

@@ -4,7 +4,6 @@ export default class extends Controller {
   static targets = ["session", "template", "systemPrompt", "prompt", "name"]
 
   connect() {
-    // Prefill if session already selected (e.g. from URL param)
     if (this.sessionTarget.value && this.templateTarget.value) {
       this.prefill()
     }
@@ -17,7 +16,7 @@ export default class extends Controller {
     if (!sessionId || !template) return
 
     fetch(`/experiments/prefill?session_id=${sessionId}&template=${template}`)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json() })
       .then(data => {
         this.systemPromptTarget.value = data.system_prompt || ""
         this.promptTarget.value = data.prompt || ""
@@ -25,5 +24,6 @@ export default class extends Controller {
           this.nameTarget.value = data.name
         }
       })
+      .catch(() => {})
   }
 }
