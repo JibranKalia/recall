@@ -94,8 +94,45 @@ class Experiment::PromptTemplate
   end
 
   def self.brief_summary_system_prompt
-    # Reuse the existing summarizer prompt
-    Recall::Summarizer.new(nil).send(:chunk_system_prompt, nil, include_title: true)
+    LLM::PromptBuilder.build do |p|
+      p.text "You are a conversation summarizer. You will receive a conversation between a user and an AI coding assistant."
+
+      p.context do |c|
+        c.text "This is the full conversation."
+      end
+
+      p.instructions <<~TEXT.strip
+        Summarize as bullet points. Focus on what was LEARNED, DECIDED, or PRODUCED — not the back-and-forth process.
+
+        Capture whichever apply:
+        - Decisions made and their rationale
+        - Code or artifacts created, modified, or deleted
+        - Technical designs, architecture choices, and trade-offs
+        - Bugs, root causes, or incorrect assumptions uncovered
+        - Code review findings and recommendations given
+        - Key facts or constraints discovered during investigation
+        - Corrections to earlier understanding (what changed and why)
+      TEXT
+
+      p.rules <<~TEXT.strip
+        - Never use "User asked" / "Assistant provided" / "User requested" phrasing
+        - Write in past tense, action-oriented voice
+        - Group related items together rather than listing chronologically
+        - Never use emojis
+      TEXT
+
+      p.output_format <<~TEXT.strip
+        Wrap your output in XML tags:
+
+        <summary>
+        - bullet points here
+        </summary>
+        <title>descriptive title up to 15 words</title>
+
+        The title should capture the main intent, topic, and outcome of the conversation.
+        Output no quotes or preamble — only the two XML blocks.
+      TEXT
+    end
   end
 
   def self.tool_only?(message)

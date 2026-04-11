@@ -1,24 +1,43 @@
 <h1 class="page-title">New Experiment</h1>
 
-<%= form_with model: @experiment, url: experiments_path, method: :post, class: "experiment-form" do |f| %>
+<%= form_with model: @experiment, url: experiments_path, method: :post, class: "experiment-form",
+    data: { controller: "experiment-prefill" } do |f| %>
   <div class="form-group">
     <label class="form-label" for="experiment_session_id">Session</label>
-    <%= f.collection_select :session_id, @sessions, :id, :display_title, { prompt: "Select a session..." }, { class: "form-select form-select-full", required: true } %>
+    <%= f.collection_select :session_id, @sessions, :id, :display_title,
+        { prompt: "Select a session..." },
+        { class: "form-select form-select-full", required: true,
+          data: { experiment_prefill_target: "session", action: "change->experiment-prefill#prefill" } } %>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Prompt Template <span class="text-dim">(optional)</span></label>
+    <select class="form-select form-select-full"
+            data-experiment-prefill-target="template"
+            data-action="change->experiment-prefill#prefill">
+      <option value="">None — manual entry</option>
+      <% @templates.each do |t| %>
+        <option value="<%= t[:key] %>"><%= t[:name] %> — <%= t[:description] %></option>
+      <% end %>
+    </select>
   </div>
 
   <div class="form-group">
     <label class="form-label" for="experiment_name">Name</label>
-    <%= f.text_field :name, class: "form-input", placeholder: "e.g. Summarization comparison", required: true %>
+    <%= f.text_field :name, class: "form-input", placeholder: "e.g. Summarization comparison", required: true,
+        data: { experiment_prefill_target: "name" } %>
   </div>
 
   <div class="form-group">
     <label class="form-label" for="experiment_system_prompt">System Prompt <span class="text-dim">(optional)</span></label>
-    <%= f.text_area :system_prompt, class: "form-textarea", rows: 4, placeholder: "Instructions for the model..." %>
+    <%= f.text_area :system_prompt, class: "form-textarea", rows: 4, placeholder: "Instructions for the model...",
+        data: { experiment_prefill_target: "systemPrompt" } %>
   </div>
 
   <div class="form-group">
     <label class="form-label" for="experiment_prompt_text">Prompt</label>
-    <%= f.text_area :prompt_text, class: "form-textarea", rows: 8, placeholder: "The prompt to send to all selected providers...", required: true %>
+    <%= f.text_area :prompt_text, class: "form-textarea", rows: 8, placeholder: "The prompt to send to all selected providers...", required: true,
+        data: { experiment_prefill_target: "prompt" } %>
   </div>
 
   <div class="form-group">

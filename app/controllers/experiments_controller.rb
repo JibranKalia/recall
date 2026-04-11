@@ -13,6 +13,13 @@ class ExperimentsController < ApplicationController
     @experiment = Experiment.new(session_id: params[:session_id])
     @available_providers = LLM::PROVIDERS.keys
     @sessions = Session.recent.limit(50)
+    @templates = Experiment::PromptTemplate.all
+  end
+
+  def prefill
+    session = Session.find(params[:session_id])
+    data = Experiment::PromptTemplate.build(params[:template], session)
+    render json: data
   end
 
   def create
