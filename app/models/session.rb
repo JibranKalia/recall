@@ -56,8 +56,10 @@ class Session < ApplicationRecord
 
   def sync_fts
     conn = self.class.connection
-    conn.execute(sanitize_sql(["INSERT INTO sessions_fts(sessions_fts, rowid, title, custom_title, summary, external_id) VALUES ('delete', ?, ?, ?, ?, ?)",
-      id, title_before_last_save, custom_title_before_last_save, nil, external_id_before_last_save]))
+    unless previously_new_record?
+      conn.execute(sanitize_sql(["INSERT INTO sessions_fts(sessions_fts, rowid, title, custom_title, summary, external_id) VALUES ('delete', ?, ?, ?, ?, ?)",
+        id, title_before_last_save, custom_title_before_last_save, nil, external_id_before_last_save]))
+    end
     conn.execute(sanitize_sql(["INSERT INTO sessions_fts(rowid, title, custom_title, summary, external_id) VALUES (?, ?, ?, ?, ?)",
       id, title, custom_title, latest_summary&.body, external_id]))
   end

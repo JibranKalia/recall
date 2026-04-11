@@ -63,8 +63,9 @@ bin/recall search "query"              # CLI search
 **FTS5 search** (`Searchable` concern):
 - Two FTS virtual tables: `messages_fts` (content_text) and `sessions_fts` (title, custom_title, summary).
 - `messages_fts` auto-synced via SQLite triggers on `message_contents` insert/update/delete.
-- `sessions_fts` manually synced via `Session#sync_fts` (after_save hook).
+- `sessions_fts` manually synced via `Session#sync_fts` (after_save hook). Uses `previously_new_record?` to skip the FTS delete on create (deleting a non-existent FTS entry causes SQLITE_CORRUPT).
 - `Message.search(query)` searches both tables, returns messages with `snippet` attribute.
+- **structure.sql caveat**: Rails schema dump includes FTS5 internal backing tables (`*_fts_data`, `*_fts_idx`, etc.) which must be removed — they're auto-created by `CREATE VIRTUAL TABLE` and duplicating them corrupts the FTS index on `db:schema:load`.
 
 **Data directory**: Dev databases live in `~/.config/recall/` (configurable via `RECALL_DATA_DIR`), making the CLI work from any directory.
 
@@ -73,6 +74,16 @@ bin/recall search "query"              # CLI search
 **Web UI**: Projects index → Project show (paginated sessions, 30/page) → Session show (messages with Markdown export). Global search page with live XHR results. Experiments page (`/experiments`) for creating and comparing multi-provider LLM runs with live Turbo Stream updates.
 
 **CLI**: `bin/recall` — search, import, stats, projects, sessions commands. Loads Rails env but works from any directory.
+
+## Testing
+
+```bash
+bin/rails test                                          # Run all tests
+bin/rails test test/models/session/markdown_test.rb     # Single file
+bin/rails test test/models/session/markdown_test.rb:13  # Single test by line
+```
+
+Test DB setup: `RAILS_ENV=test bin/rails db:drop db:create db:schema:load db:environment:set`. If FTS errors appear, delete `storage/test.sqlite3` and re-run.
 
 ## Tech Stack
 
