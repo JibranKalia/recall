@@ -1,0 +1,20 @@
+.icon {
+  -webkit-touch-callout: none;
+  background-color: currentColor;
+  block-size: var(--icon-size, 1em);
+  display: inline-block;
+  flex-shrink: 0;
+  inline-size: var(--icon-size, 1em);
+  mask-image: var(--svg);
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: var(--icon-size, 1em);
+  pointer-events: none;
+  user-select: none;
+}
+
+.icon--copy   { --svg: url("icons/copy.svg"); }
+.icon--check  { --svg: url("icons/check.svg"); }
+.icon--link   { --svg: url("icons/link.svg"); }
+.icon--trash  { --svg: url("icons/trash.svg"); }
+.icon--filter { --svg: url("icons/filter.svg"); }

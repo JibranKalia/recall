@@ -68,6 +68,8 @@ bin/recall search "query"              # CLI search
 
 **Data directory**: Dev databases live in `~/.config/recall/` (configurable via `RECALL_DATA_DIR`), making the CLI work from any directory.
 
+**Icons**: CSS mask-image system (copied from quranportal). SVG files in `app/assets/images/icons/`, CSS in `icons.css`, rendered via `icon_tag(:name)` helper. Icons inherit `currentColor` for easy styling. Never use inline SVGs — add new icons as `.svg` files and register in `icons.css`.
+
 **Web UI**: Projects index → Project show (paginated sessions, 30/page) → Session show (messages with Markdown export). Global search page with live XHR results. Experiments page (`/experiments`) for creating and comparing multi-provider LLM runs with live Turbo Stream updates.
 
 **CLI**: `bin/recall` — search, import, stats, projects, sessions commands. Loads Rails env but works from any directory.

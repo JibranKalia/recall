@@ -87,7 +87,10 @@
           <span class="message-role-label role-label-user">You</span>
           <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>
           <button class="msg-copy-btn" data-action="click->message-copy#copy" title="Copy message">
-            <span data-message-copy-target="icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h2.5"/></svg></span>
+            <%= icon_tag(:copy, data: { message_copy_target: "icon" }) %>
+          </button>
+          <button class="msg-copy-btn msg-link-btn" data-action="click->message-copy#copyLink" title="Copy link to message">
+            <%= icon_tag(:link, data: { message_copy_target: "linkIcon" }) %>
           </button>
         </div>
         <div data-message-copy-target="content">
@@ -100,7 +103,10 @@
           <span class="message-role-label role-label-assistant">Assistant</span>
           <span class="message-timestamp"><%= message.timestamp&.strftime("%H:%M:%S") %></span>
           <button class="msg-copy-btn" data-action="click->message-copy#copy" title="Copy message">
-            <span data-message-copy-target="icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h2.5"/></svg></span>
+            <%= icon_tag(:copy, data: { message_copy_target: "icon" }) %>
+          </button>
+          <button class="msg-copy-btn msg-link-btn" data-action="click->message-copy#copyLink" title="Copy link to message">
+            <%= icon_tag(:link, data: { message_copy_target: "linkIcon" }) %>
           </button>
           <% if message.model.present? %>
             <span class="message-model-tag message-model-right"><%= message.model %></span>

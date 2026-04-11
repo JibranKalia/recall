@@ -9,6 +9,14 @@
 .message {
   position: relative;
   padding: 0.75rem 0;
+  scroll-margin-top: 4rem;
+}
+.message:target {
+  animation: msg-highlight 2s ease-out;
+}
+@keyframes msg-highlight {
+  0%   { background: var(--accent-bg, rgba(99, 102, 241, 0.12)); }
+  100% { background: transparent; }
 }
 
 /* ── User Messages — the human side of the conversation ── */
@@ -149,7 +157,7 @@
   background: var(--bg-inset);
   color: var(--text);
 }
-.msg-copy-btn.msg-copy-copied {
+.msg-copy-btn .icon--check {
   color: var(--accent);
 }
 
