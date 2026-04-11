@@ -58,6 +58,18 @@
   <% end %>
 </div>
 
+<div class="run-modal-overlay"
+     data-controller="run-modal"
+     data-action="click->run-modal#close keydown.esc@document->run-modal#closeKey run-card:open->run-modal#open">
+  <div class="run-modal">
+    <div class="run-modal-header">
+      <div data-run-modal-target="header"></div>
+      <button class="run-modal-close" data-action="click->run-modal#close">&times;</button>
+    </div>
+    <div class="run-modal-body prose" data-run-modal-target="body"></div>
+  </div>
+</div>
+
 <% if @experiment.runs.completed.count > 1 %>
   <div class="experiment-comparison-summary">
     <h2>Comparison</h2>

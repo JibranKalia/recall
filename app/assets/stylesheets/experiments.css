@@ -373,6 +373,11 @@
   border-bottom: 1px solid var(--border);
 }
 
+.run-metrics--borderless {
+  border: none;
+  padding: 0;
+}
+
 .run-metric {
   display: flex;
   flex-direction: column;
@@ -430,7 +435,7 @@
   animation: spin 0.8s linear infinite;
 }
 
-.run-card[data-controller="run-modal"] {
+.run-card[data-controller="run-card"] {
   cursor: pointer;
 }
 
@@ -475,6 +480,13 @@
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.run-modal-header > div {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
 }
 
 .run-modal-close {
