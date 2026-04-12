@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   end
 
   post "import", to: "imports#create"
+  get "import/status", to: "imports#status"
 
   get "up" => "rails/health#show", as: :rails_health_check
 end

@@ -1,4 +1,11 @@
 class ImportsController < ApplicationController
+  def status
+    render json: {
+      last_import_at: ImportRun.last_completed_at&.iso8601,
+      running: ImportRun.any_running?
+    }
+  end
+
   def create
     if params[:session_id].present?
       session = Session.includes(:source).find_by(id: params[:session_id])
