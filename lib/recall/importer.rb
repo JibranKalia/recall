@@ -3,7 +3,8 @@ module Recall
     SOURCES = [
       { class: Importers::ClaudeCode, args: { base_dir: "~/.claude", source_name: "claude" } },
       { class: Importers::ClaudeCode, args: { base_dir: "~/.claude-work", source_name: "claude_work" } },
-      { class: Importers::Codex, args: {} }
+      { class: Importers::Codex, args: {} },
+      { class: Importers::OpenCode, args: {} }
     ].freeze
 
     def self.import_all

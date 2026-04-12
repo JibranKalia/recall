@@ -21,6 +21,7 @@ bin/rails recall:import                # Import all sources (incremental)
 bin/rails recall:import_claude         # Import Claude Code (personal) only
 bin/rails recall:import_claude_work    # Import Claude Code (work) only
 bin/rails recall:import_codex          # Import Codex only
+bin/rails recall:import_open_code      # Import OpenCode only
 bin/rails recall:reimport              # Force re-import (ignore checksums)
 bin/rails recall:generate_titles       # Enqueue title generation for untitled sessions
 bin/rails recall:regenerate_titles     # Clear + re-generate all titles
@@ -58,6 +59,7 @@ bin/recall search "query"              # CLI search
 - `Importers::Base` provides checksum-based dedup, transactional imports, UTF-8 sanitization. Each file import is wrapped in a transaction.
 - `Importers::ClaudeCode` reads `~/.claude/projects/**/*.jsonl` and `~/.claude-work/projects/**/*.jsonl`. Skips `memory.jsonl` and non-message entry types.
 - `Importers::Codex` reads `~/.codex/sessions/**/*.jsonl` plus SQLite state DB (`state_5.sqlite`) for metadata (title, tokens, model, git branch).
+- `Importers::OpenCode` reads directly from `~/.local/share/opencode/opencode.db` (SQLite). Sessions, messages, and parts all from DB. Uses `time_updated` for change detection.
 - `GenerateSummaryJob` is enqueued during import to auto-generate summaries + titles via `Experiment.complete!` (`Recall::Summarizer`). Each chunk summary and title generation creates its own Experiment record.
 
 **FTS5 search** (`Searchable` concern):

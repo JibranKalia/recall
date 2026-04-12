@@ -19,6 +19,11 @@ namespace :recall do
     Recall::Importer.import_source("codex")
   end
 
+  desc "Import only OpenCode conversations"
+  task import_open_code: :environment do
+    Recall::Importer.import_source("open_code")
+  end
+
   desc "Force re-import everything (ignores checksums)"
   task reimport: :environment do
     Recall::Importer.reimport_all
