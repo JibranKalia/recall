@@ -150,6 +150,8 @@ class RecallCLI
       scope = scope.where("sessions.ended_at <= ?", cst.parse(@options[:to]).end_of_day)
     end
 
+    warn_if_stale(cst)
+
     puts "  #{scope.count} sessions"
     puts "  #{'ID'.ljust(6)} #{'Date'.ljust(16)} Title"
     puts "  #{'—' * 6} #{'—' * 16} #{'—' * 40}"
@@ -266,6 +268,23 @@ class RecallCLI
     when "WebSearch" then input&.dig("query")
     when "WebFetch" then input&.dig("url")&.truncate(80)
     end
+  end
+
+  def warn_if_stale(cst)
+    last_import = ImportRun.last_completed_at
+    return unless last_import
+
+    # Use the latest date in the requested range to check staleness
+    check_date = @options[:to] || @options[:from]
+    return unless check_date
+
+    query_end = cst.parse(check_date).end_of_day
+    return unless query_end > last_import
+    return if last_import > 15.minutes.ago
+
+    age = last_import.in_time_zone("America/Chicago").strftime("%Y-%m-%d %H:%M %Z")
+    puts "  \033[33m⚠ Last import: #{age} — results may be incomplete. Run `recall import` to refresh.\033[0m"
+    puts ""
   end
 
   def parse_options!
