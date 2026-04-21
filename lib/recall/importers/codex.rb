@@ -1,18 +1,17 @@
 module Recall
   module Importers
     class Codex < Base
-      CODEX_DIR = File.expand_path("~/.codex")
-      STATE_DB = File.join(CODEX_DIR, "state_5.sqlite")
-
       def initialize
         super
+        @codex_dir = File.expand_path(Recall::Config.codex_dir || "~/.codex")
+        @state_db = File.join(@codex_dir, "state_5.sqlite")
         @thread_metadata = load_thread_metadata
       end
 
       private
 
       def each_session_file(&block)
-        sessions_dir = File.join(CODEX_DIR, "sessions")
+        sessions_dir = File.join(@codex_dir, "sessions")
         return unless Dir.exist?(sessions_dir)
 
         Dir.glob(File.join(sessions_dir, "**", "*.jsonl")).each do |path|
@@ -267,9 +266,9 @@ module Recall
       end
 
       def load_thread_metadata
-        return {} unless File.exist?(STATE_DB)
+        return {} unless File.exist?(@state_db)
 
-        db = SQLite3::Database.new(STATE_DB, readonly: true)
+        db = SQLite3::Database.new(@state_db, readonly: true)
         db.results_as_hash = true
         rows = db.execute("SELECT id, title, cwd, model, git_branch, git_sha, tokens_used FROM threads")
         db.close

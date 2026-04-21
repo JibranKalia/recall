@@ -1,14 +1,13 @@
 module Recall
   module Importers
     class OpenCode < Base
-      OPENCODE_DB = File.expand_path("~/.local/share/opencode/opencode.db")
-
       def initialize
         super
+        @db_path = File.expand_path(Recall::Config.opencode_db || "~/.local/share/opencode/opencode.db")
       end
 
       def import_all
-        return unless File.exist?(OPENCODE_DB)
+        return unless File.exist?(@db_path)
 
         db = open_db
         sessions = db.execute(<<~SQL)
@@ -32,7 +31,7 @@ module Recall
       end
 
       def reimport_all
-        return unless File.exist?(OPENCODE_DB)
+        return unless File.exist?(@db_path)
 
         db = open_db
         sessions = db.execute(<<~SQL)
@@ -66,7 +65,7 @@ module Recall
       end
 
       def open_db
-        db = SQLite3::Database.new(OPENCODE_DB, readonly: true)
+        db = SQLite3::Database.new(@db_path, readonly: true)
         db.results_as_hash = true
         db
       end

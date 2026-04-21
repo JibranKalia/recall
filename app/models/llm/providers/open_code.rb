@@ -1,11 +1,9 @@
 require "open3"
 
 class LLM::Providers::OpenCode < LLM::Provider
-  DEFAULT_MODEL = "kimi-k2.5"
-
   attr_reader :model
 
-  def initialize(model: DEFAULT_MODEL)
+  def initialize(model: Recall::Config.opencode_default_model)
     @model = model
     @opencode_model = "opencode/#{model}"
   end

@@ -33,6 +33,9 @@
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
+# Machine-specific Recall config overrides.
+/config/recall.local.rb
+
 
 /app/assets/builds/*
 !/app/assets/builds/.keep

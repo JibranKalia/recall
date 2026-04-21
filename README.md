@@ -34,15 +34,37 @@ Or use the CLI:
 bin/recall search "OAuth token refresh"
 bin/recall projects
 bin/recall stats
+bin/recall update             # Pull latest code, bundle, migrate
 ```
+
+## Configuration
+
+Recall reads two config files at boot:
+
+- `config/recall.rb` — checked in, has defaults and AI-facing instructions.
+  Edit this for settings you want in version control.
+- `config/recall.local.rb` — gitignored, for machine-specific overrides
+  (personal paths, private model defaults, etc.).
+
+Open `config/recall.rb` for the full list of knobs: import source paths,
+project domain classification, Ollama host, default models, and more.
+Every setting is optional; missing source paths are skipped silently at
+import time.
+
+Override the data directory with the `RECALL_DATA_DIR` env var (it has to
+be an env var — `database.yml` reads it at boot before `config/recall.rb`
+loads). Default: `~/.config/recall/`.
 
 ## Supported sources
 
-| Source | Location | What's imported |
-|--------|----------|-----------------|
-| Claude Code (personal) | `~/.claude/projects/**/*.jsonl` | Messages, tool calls, token usage |
-| Claude Code (work) | `~/.claude-work/projects/**/*.jsonl` | Same as above |
+| Source | Default location | What's imported |
+|--------|------------------|-----------------|
+| Claude Code | `~/.claude/projects/**/*.jsonl` | Messages, tool calls, token usage |
 | OpenAI Codex | `~/.codex/sessions/**/*.jsonl` | Messages, metadata from state DB |
+| OpenCode | `~/.local/share/opencode/opencode.db` | Sessions, messages, parts |
+
+Add additional Claude Code directories (e.g. a work profile under a
+different `CLAUDE_CONFIG_DIR`) via `config/recall.local.rb`.
 
 ## Built with
 

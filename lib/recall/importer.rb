@@ -1,17 +1,20 @@
 module Recall
   class Importer
-    SOURCES = [
-      { class: Importers::ClaudeCode, args: { base_dir: "~/.claude", source_name: "claude" } },
-      { class: Importers::ClaudeCode, args: { base_dir: "~/.claude-work", source_name: "claude_work" } },
-      { class: Importers::Codex, args: {} },
-      { class: Importers::OpenCode, args: {} }
-    ].freeze
+    def self.sources
+      sources = []
+      Array(Recall::Config.claude_code_dirs).each do |entry|
+        sources << { class: Importers::ClaudeCode, args: { base_dir: entry[:path], source_name: entry[:name] } }
+      end
+      sources << { class: Importers::Codex, args: {} } if Recall::Config.codex_dir
+      sources << { class: Importers::OpenCode, args: {} } if Recall::Config.opencode_db
+      sources
+    end
 
     def self.import_all
       with_import_run do
         puts "Recall: importing conversations..."
         session_ids = []
-        SOURCES.each do |source|
+        sources.each do |source|
           importer = source[:class].new(**source[:args])
           importer.import_all
           session_ids.concat(importer.imported_session_ids)
@@ -24,7 +27,7 @@ module Recall
     def self.reimport_all
       with_import_run do
         puts "Recall: force re-importing all conversations..."
-        SOURCES.each do |source|
+        sources.each do |source|
           importer = source[:class].new(**source[:args])
           importer.reimport_all
         end
@@ -59,17 +62,18 @@ module Recall
       source = session.source
       return unless source&.source_path
 
-      importer_config = SOURCES.find { |s| s[:args][:source_name].to_s == source.source_name.to_s } ||
-                        SOURCES.find { |s| s[:class].name.demodulize.underscore == source.source_type.to_s }
+      current_sources = sources
+      importer_config = current_sources.find { |s| s[:args][:source_name].to_s == source.source_name.to_s } ||
+                        current_sources.find { |s| s[:class].name.demodulize.underscore == source.source_type.to_s }
       return unless importer_config
 
       importer = importer_config[:class].new(**importer_config[:args])
       importer.send(:import_file, source.source_path, force: true)
-      sync_fts([session.id])
+      sync_fts([ session.id ])
     end
 
     def self.import_source(name)
-      source = SOURCES.find { |s|
+      source = sources.find { |s|
         s[:args][:source_name] == name || s[:class].name.demodulize.underscore == name
       }
       raise "Unknown source: #{name}" unless source

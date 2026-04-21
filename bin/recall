@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
+set -e
 RECALL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$RECALL_DIR"
+
+if [ "$1" = "update" ]; then
+  shift
+  echo "Recall: updating..."
+  if command -v jj >/dev/null 2>&1 && [ -d .jj ]; then
+    jj git fetch && jj rebase -d 'trunk()'
+  else
+    git pull --ff-only
+  fi
+  bundle install
+  bin/rails db:migrate
+  echo "Done. Restart bin/dev if it's running."
+  exit 0
+fi
+
 exec bundle exec ruby lib/recall/cli.rb "$@"

@@ -1,11 +1,9 @@
 require "httparty"
 
 class LLM::Providers::Ollama < LLM::Provider
-  DEFAULT_URL = "http://localhost:11434"
-
   attr_reader :model
 
-  def initialize(model:, base_url: DEFAULT_URL)
+  def initialize(model: Recall::Config.ollama_default_model, base_url: Recall::Config.ollama_host)
     @model = model
     @base_url = base_url
   end

@@ -1,11 +1,9 @@
 require "open3"
 
 class LLM::Providers::Codex < LLM::Provider
-  DEFAULT_MODEL = "codex"
-
   attr_reader :model
 
-  def initialize(model: DEFAULT_MODEL)
+  def initialize(model: Recall::Config.codex_default_model)
     @model = model
   end
 

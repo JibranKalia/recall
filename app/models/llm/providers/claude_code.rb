@@ -1,11 +1,9 @@
 require "open3"
 
 class LLM::Providers::ClaudeCode < LLM::Provider
-  DEFAULT_MODEL = "claude-sonnet-4-20250514"
-
   attr_reader :model
 
-  def initialize(model: DEFAULT_MODEL)
+  def initialize(model: Recall::Config.claude_code_default_model)
     @model = model
   end
 
@@ -14,7 +12,10 @@ class LLM::Providers::ClaudeCode < LLM::Provider
   end
 
   def work_dir?
-    Dir.pwd.start_with?(File.expand_path("~/work"))
+    prefix = Recall::Config.claude_code_work_dir_prefix_expanded
+    config_dir = Recall::Config.claude_code_work_config_dir_expanded
+    return false unless prefix && config_dir
+    Dir.pwd.start_with?(prefix)
   end
 
   def complete(prompt, system: nil, **)
@@ -23,7 +24,7 @@ class LLM::Providers::ClaudeCode < LLM::Provider
     full_prompt = system ? "#{system}\n\n#{prompt}" : prompt
 
     cmd = [ "claude", "-p", "--model", @model, "--output-format", "json", "--no-session-persistence" ]
-    env = work_dir? ? { "CLAUDE_CONFIG_DIR" => File.expand_path("~/.claude-work") } : {}
+    env = work_dir? ? { "CLAUDE_CONFIG_DIR" => Recall::Config.claude_code_work_config_dir_expanded } : {}
     stdout, stderr, status = Open3.capture3(env, *cmd, stdin_data: full_prompt)
 
     duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round

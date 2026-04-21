@@ -114,7 +114,7 @@ class RecallCLI
   def projects
     parse_options! do |opts|
       opts.banner = "Usage: recall projects [options]"
-      opts.on("--domain NAME", Project::DOMAINS, "Filter by domain (#{Project::DOMAINS.join(', ')})") { |v| @options[:domain] = v }
+      opts.on("--domain NAME", Project.domains, "Filter by domain (#{Project.domains.join(', ')})") { |v| @options[:domain] = v }
     end
 
     scope = Project.order(:name)
@@ -129,7 +129,7 @@ class RecallCLI
   def sessions
     parse_options! do |opts|
       opts.banner = "Usage: recall sessions [PROJECT_NAME] [options]"
-      opts.on("--domain NAME", Project::DOMAINS, "Filter by domain (#{Project::DOMAINS.join(', ')})") { |v| @options[:domain] = v }
+      opts.on("--domain NAME", Project.domains, "Filter by domain (#{Project.domains.join(', ')})") { |v| @options[:domain] = v }
       opts.on("--from DATE", "Start date in CST (e.g. 2026-04-01)") { |v| @options[:from] = v }
       opts.on("--to DATE", "End date in CST (e.g. 2026-04-05)") { |v| @options[:to] = v }
       opts.on("--limit N", Integer, "Max results (default 50)") { |v| @options[:limit] = v }
@@ -305,6 +305,7 @@ class RecallCLI
         projects          List all projects
         sessions [NAME]   List recent sessions (optionally filter by project)
         show <id|url>     Show full session transcript
+        update            Pull latest code, install deps, run migrations
 
       Run `recall <command> --help` for command-specific options.
     USAGE

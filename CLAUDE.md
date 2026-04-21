@@ -55,11 +55,12 @@ bin/recall search "query"              # CLI search
 - **Important**: All LLM calls must create an Experiment record. Use `Experiment.complete!` for synchronous calls or create an Experiment + Run and enqueue `RunProviderJob` for async.
 
 **Import pipeline** (`lib/recall/`):
-- `Importer` orchestrates imports from 3 registered sources, rebuilds FTS after each run.
+- `Importer.sources` builds the importer list at runtime from `Recall::Config` (see `config/recall.rb`). Rebuilds FTS after each run.
 - `Importers::Base` provides checksum-based dedup, transactional imports, UTF-8 sanitization. Each file import is wrapped in a transaction.
-- `Importers::ClaudeCode` reads `~/.claude/projects/**/*.jsonl` and `~/.claude-work/projects/**/*.jsonl`. Skips `memory.jsonl` and non-message entry types.
-- `Importers::Codex` reads `~/.codex/sessions/**/*.jsonl` plus SQLite state DB (`state_5.sqlite`) for metadata (title, tokens, model, git branch).
-- `Importers::OpenCode` reads directly from `~/.local/share/opencode/opencode.db` (SQLite). Sessions, messages, and parts all from DB. Uses `time_updated` for change detection.
+- `Importers::ClaudeCode` reads one or more dirs from `Recall::Config.claude_code_dirs` (default `~/.claude`). Skips `memory.jsonl` and non-message entry types.
+- `Importers::Codex` reads `Recall::Config.codex_dir` (default `~/.codex`) plus its SQLite state DB (`state_5.sqlite`) for metadata (title, tokens, model, git branch).
+- `Importers::OpenCode` reads `Recall::Config.opencode_db` (default `~/.local/share/opencode/opencode.db`). Sessions, messages, and parts all from DB. Uses `time_updated` for change detection.
+- Importers skip silently if their source path doesn't exist, so a config entry for a tool that isn't installed on this machine is safe.
 - `GenerateSummaryJob` is enqueued during import to auto-generate summaries + titles via `Experiment.complete!` (`Recall::Summarizer`). Each chunk summary and title generation creates its own Experiment record.
 
 **FTS5 search** (`Searchable` concern):
@@ -70,6 +71,8 @@ bin/recall search "query"              # CLI search
 - **structure.sql caveat**: Rails schema dump includes FTS5 internal backing tables (`*_fts_data`, `*_fts_idx`, etc.) which must be removed — they're auto-created by `CREATE VIRTUAL TABLE` and duplicating them corrupts the FTS index on `db:schema:load`.
 
 **Data directory**: Dev databases live in `~/.config/recall/` (configurable via `RECALL_DATA_DIR`), making the CLI work from any directory.
+
+**Configuration**: Machine-specific settings live in `config/recall.rb` (checked in, with AI-facing instructions at the top) and `config/recall.local.rb` (gitignored overrides). Both apply to `Recall::Config`. Edit these instead of hardcoding paths, model names, or domain rules in source.
 
 **Icons**: CSS mask-image system (copied from quranportal). SVG files in `app/assets/images/icons/`, CSS in `icons.css`, rendered via `icon_tag(:name)` helper. Icons inherit `currentColor` for easy styling. Never use inline SVGs — add new icons as `.svg` files and register in `icons.css`.
 
