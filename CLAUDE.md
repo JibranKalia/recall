@@ -72,7 +72,7 @@ bin/recall search "query"              # CLI search
 
 **Data directory**: Dev databases live in `~/.config/recall/` (configurable via `RECALL_DATA_DIR`), making the CLI work from any directory.
 
-**Configuration**: Machine-specific settings live in `config/recall.rb` (checked in, with AI-facing instructions at the top) and `config/recall.local.rb` (gitignored overrides). Both apply to `Recall::Config`. Edit these instead of hardcoding paths, model names, or domain rules in source.
+**Configuration**: Machine-specific settings live in `config/recall.rb` (checked in, with AI-facing instructions at the top) and `config/recall.local.rb` (gitignored overrides). Both use `Recall.configure do |c| ... end`; the block yields a `Recall::Config::DSL` instance. List-type settings (`c.claude_code`, `c.domain`, etc.) accumulate across the two files; scalars (`c.default_domain = "..."`, `c.ollama_host = "..."`) overwrite. Edit these instead of hardcoding paths, model names, or domain rules in source.
 
 **Icons**: CSS mask-image system (copied from quranportal). SVG files in `app/assets/images/icons/`, CSS in `icons.css`, rendered via `icon_tag(:name)` helper. Icons inherit `currentColor` for easy styling. Never use inline SVGs — add new icons as `.svg` files and register in `icons.css`.
 
