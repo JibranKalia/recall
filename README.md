@@ -10,6 +10,16 @@ You've had hundreds of conversations with Claude Code and Codex. You *know* you 
 
 **Imports** conversations from Claude Code and OpenAI Codex into a single SQLite database. **Indexes** every message with FTS5 full-text search. **Serves** a web UI for browsing and a CLI for quick lookups.
 
+## Screenshots
+
+A rendered session with auto-generated summary, token/cost metadata, and one-click Markdown export:
+
+![Session view](docs/screenshots/session.png)
+
+Projects index — conversations grouped by the repo/directory they happened in:
+
+![Projects index](docs/screenshots/projects.png)
+
 - **Markdown export** -- every session has a one-click Markdown copy button, so you can grab an entire conversation cleanly instead of fighting terminal selection
 - **Search across everything** -- find that conversation where you debugged the OAuth flow, with highlighted snippets showing exactly where the match is
 - **Browse by project** -- conversations grouped by the repo/directory they happened in
