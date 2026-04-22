@@ -52,7 +52,9 @@ module Recall
       elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start).round(1)
       @logger.info "[Summarizer] Session #{@session.id}: done in #{elapsed}s — \"#{title}\""
 
-      @session.summaries.create!(title: title, body: body, experiment_run: @last_run, message_count: msg_count)
+      summary = @session.summaries.create!(title: title, body: body, experiment_run: @last_run, message_count: msg_count)
+      PushTitleToClaudeCodeJob.perform_later(@session)
+      summary
     rescue => e
       @logger.error "[Summarizer] Session #{@session.id} failed: #{e.message}"
       nil
