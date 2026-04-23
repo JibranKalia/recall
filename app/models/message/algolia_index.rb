@@ -33,9 +33,19 @@ module Message::AlgoliaIndex
         attribute :started_at_ts do
           session&.started_at&.to_i
         end
-        searchableAttributes ["content_text", "display_title"]
-        attributesForFaceting ["filterOnly(project_id)", "filterOnly(session_id)"]
-        customRanking ["desc(started_at_ts)"]
+        # Per-record static signal of session "importance" — used as the
+        # primary custom-ranking tiebreaker so substantial sessions outrank
+        # daily-log one-offs that mention the query in passing. messages_count
+        # is a counter_cache column so this is O(1).
+        attribute :session_message_count do
+          session&.messages_count.to_i
+        end
+        searchableAttributes ["display_title", "content_text"]
+        # session_id needs full faceting (not filterOnly) so the searcher can
+        # request per-session facet counts and re-rank results by how many
+        # messages within each session matched the query.
+        attributesForFaceting ["filterOnly(project_id)", "session_id"]
+        customRanking ["desc(session_message_count)", "desc(started_at_ts)"]
         attributesToSnippet ["content_text:40"]
         snippetEllipsisText "..."
         highlightPreTag "<mark>"

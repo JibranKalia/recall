@@ -16,22 +16,43 @@ module Recall
       return [] unless Session.algolia_enabled?
 
       # Over-fetch so we have enough unique sessions after session-level dedup.
-      params = { hitsPerPage: limit * 4 }
+      params = {
+        hitsPerPage: limit * 4,
+        facets: ["session_id"],
+        # Algolia caps facet count arrays at 100 values by default; bump so
+        # we have per-session counts for everything in the result window.
+        maxValuesPerFacet: 1_000
+      }
       params[:filters] = "project_id:#{project_id.to_i}" if project_id
 
-      hits = Message.algolia_search(query, params).to_a
+      response = Message.algolia_search(query, params)
+      hits = response.to_a
       return [] if hits.empty?
 
+      # Counts of matching messages per session — our group-level signal.
+      # Algolia returns facet keys as strings; normalize to integer.
+      facets = response.algolia_facets || {}
+      session_match_counts = (facets["session_id"] || facets[:session_id] || {})
+        .each_with_object({}) { |(sid, count), acc| acc[sid.to_i] = count.to_i }
+
+      # Dedupe to one hit per session — Algolia returns hits in its own
+      # relevance order, so the first we see is the best match for that session.
       best_hit_per_session = {}
       hits.each do |hit|
         best_hit_per_session[hit.session_id] ||= hit
-        break if best_hit_per_session.size >= limit
       end
 
-      message_ids = best_hit_per_session.values.map(&:id)
+      # Re-rank sessions by match count (desc), preserving Algolia's per-record
+      # order within the same count.
+      sorted_session_ids = best_hit_per_session.keys.sort_by.with_index do |sid, idx|
+        [-session_match_counts.fetch(sid, 0), idx]
+      end.first(limit)
+
+      message_ids = sorted_session_ids.map { |sid| best_hit_per_session[sid].id }
       messages_by_id = Message.where(id: message_ids).includes(:content).index_by(&:id)
 
-      best_hit_per_session.values.filter_map do |hit|
+      sorted_session_ids.filter_map do |sid|
+        hit = best_hit_per_session[sid]
         message = messages_by_id[hit.id]
         next unless message
 
