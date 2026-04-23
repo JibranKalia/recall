@@ -47,10 +47,12 @@ class ProjectsController < ApplicationController
   private
 
   def resolve_backend!
-    @backend = params[:backend].to_s
-    @backend = "fts" unless SearchController::BACKENDS.include?(@backend)
-    @backend = "fts" if @backend == "algolia" && !Session.algolia_enabled?
     @algolia_available = Session.algolia_enabled?
+    # Default to Algolia in the UI when it's configured; fall back to FTS5
+    # otherwise (and when the user explicitly picks an invalid backend).
+    @backend = params[:backend].presence || (@algolia_available ? "algolia" : "fts")
+    @backend = "fts" unless SearchController::BACKENDS.include?(@backend)
+    @backend = "fts" if @backend == "algolia" && !@algolia_available
   end
 
   def run_search(query, backend, project_id: nil)
