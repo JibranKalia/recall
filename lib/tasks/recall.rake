@@ -49,6 +49,27 @@ namespace :recall do
     puts "Enqueued #{count} title generation jobs."
   end
 
+  desc "Reindex all sessions into Algolia"
+  task algolia_reindex: :environment do
+    unless Session.algolia_enabled?
+      abort "Algolia not configured. Set ALGOLIA_WRITE_API_KEY (and optionally ALGOLIA_APP_ID)."
+    end
+
+    batch_size = (ENV["BATCH_SIZE"] || 500).to_i
+    puts "Reindexing #{Session.count} sessions into Algolia..."
+    Session.algolia_reindex!(batch_size)
+    puts "Done."
+  end
+
+  desc "Clear the Algolia index for the current Rails env"
+  task algolia_clear: :environment do
+    unless Session.algolia_enabled?
+      abort "Algolia not configured. Set ALGOLIA_WRITE_API_KEY (and optionally ALGOLIA_APP_ID)."
+    end
+    Session.algolia_clear_index!
+    puts "Cleared Algolia index."
+  end
+
   desc "Show import stats"
   task stats: :environment do
     puts "Recall Stats"

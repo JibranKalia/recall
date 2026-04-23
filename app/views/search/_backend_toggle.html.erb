@@ -1,0 +1,16 @@
+<%# Toggle between FTS5 and Algolia search backends.
+    Locals: backend (current), algolia_available (bool). %>
+<div class="search-backend-toggle" role="radiogroup" aria-label="Search backend">
+  <% SearchController::BACKENDS.each do |b| %>
+    <% disabled = (b == "algolia" && !algolia_available) %>
+    <label class="search-backend-option <%= 'is-active' if b == backend %> <%= 'is-disabled' if disabled %>">
+      <input type="radio" name="backend" value="<%= b %>"
+             <%= 'checked' if b == backend %>
+             <%= 'disabled' if disabled %>
+             data-search-target="backend"
+             data-action="change->search#search">
+      <%= b == "fts" ? "FTS5" : "Algolia" %>
+      <% if disabled %><span class="search-backend-hint">(set ALGOLIA_WRITE_API_KEY)</span><% end %>
+    </label>
+  <% end %>
+</div>

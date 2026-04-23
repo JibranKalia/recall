@@ -27,7 +27,13 @@
                 <span class="search-result-badge"><%= message.role %></span>
               </div>
               <div class="search-result-snippet">
-                <% if message.respond_to?(:source) && message.source == "session" %>
+                <% if message.respond_to?(:source) && message.source == "algolia" %>
+                  <% if message.respond_to?(:snippet) && message.snippet.present? %>
+                    <%= sanitize message.snippet, tags: %w[mark] %>
+                  <% else %>
+                    <%= message.content_text&.truncate(200) %>
+                  <% end %>
+                <% elsif message.respond_to?(:source) && message.source == "session" %>
                   <span class="search-result-badge">title/summary match</span>
                   <%= message.content_text&.truncate(200) %>
                 <% elsif message.respond_to?(:snippet) && message.snippet.present? %>

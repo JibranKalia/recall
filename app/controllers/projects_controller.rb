@@ -7,8 +7,10 @@ class ProjectsController < ApplicationController
       .order("latest_session_at DESC")
 
     @query = params[:q].to_s.strip
+    resolve_backend!
+
     if @query.present?
-      @results = Message.search(@query, limit: 50)
+      @results = run_search(@query, @backend)
       @sessions_by_id = Session.where(id: @results.map(&:session_id).uniq)
         .includes(:project, :source)
         .index_by(&:id)
@@ -25,9 +27,10 @@ class ProjectsController < ApplicationController
   def show
     @project = Project.find(params[:id])
     @query = params[:q].to_s.strip
+    resolve_backend!
 
     if @query.present?
-      @results = Message.search(@query, limit: 50, project_id: @project.id)
+      @results = run_search(@query, @backend, project_id: @project.id)
       @sessions_by_id = Session.where(id: @results.map(&:session_id).uniq)
         .includes(:project, :source)
         .index_by(&:id)
@@ -41,4 +44,21 @@ class ProjectsController < ApplicationController
     @sessions = @project.sessions.includes(:token_usages).recent.page(params[:page])
   end
 
+  private
+
+  def resolve_backend!
+    @backend = params[:backend].to_s
+    @backend = "fts" unless SearchController::BACKENDS.include?(@backend)
+    @backend = "fts" if @backend == "algolia" && !Session.algolia_enabled?
+    @algolia_available = Session.algolia_enabled?
+  end
+
+  def run_search(query, backend, project_id: nil)
+    case backend
+    when "algolia"
+      Recall::AlgoliaSearcher.search(query, limit: 50, project_id: project_id)
+    else
+      Message.search(query, limit: 50, project_id: project_id)
+    end
+  end
 end

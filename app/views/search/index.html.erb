@@ -10,6 +10,8 @@
              data-action="input->search#search">
       <button type="submit" class="search-btn">Search</button>
     </div>
+
+    <%= render "search/backend_toggle", backend: @backend, algolia_available: @algolia_available %>
   </form>
 
   <div data-search-target="results">

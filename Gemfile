@@ -45,6 +45,11 @@ gem "rouge"
 # HTTP client for Ollama API
 gem "httparty"
 
+# Algolia search — experimental alternative to FTS5. Activated only when
+# ALGOLIA_APP_ID and ALGOLIA_WRITE_API_KEY env vars are set (see
+# config/initializers/algoliasearch.rb).
+gem "algoliasearch-rails"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"

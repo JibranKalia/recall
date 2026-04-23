@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["input", "results"]
+  static targets = ["input", "results", "backend"]
   static values = { url: String }
 
   connect() {
@@ -26,6 +26,7 @@ export default class extends Controller {
 
     const url = new URL(this.urlValue, window.location.origin)
     url.searchParams.set("q", query)
+    url.searchParams.set("backend", this.selectedBackend())
 
     const response = await fetch(url, {
       headers: { "X-Requested-With": "XMLHttpRequest" }
@@ -35,5 +36,10 @@ export default class extends Controller {
       const html = await response.text()
       this.resultsTarget.innerHTML = html
     }
+  }
+
+  selectedBackend() {
+    const checked = this.backendTargets.find(el => el.checked && !el.disabled)
+    return checked ? checked.value : "fts"
   }
 }
