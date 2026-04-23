@@ -1,8 +1,9 @@
 module Recall
-  # Experimental Algolia-backed search. Returns results shaped like the FTS5
-  # Searchable concern so the existing search view can render them unchanged:
-  # an array of Message-like structs with `session_id`, `content_text`,
-  # `content_json`, `role`, `snippet`, and `source` attributes.
+  # Experimental Algolia-backed search. Queries the per-message index, dedupes
+  # to one top-ranked hit per session, and returns results shaped like the
+  # FTS5 Searchable concern so the existing search view can render them
+  # unchanged: an array of Message-like structs with `session_id`,
+  # `content_text`, `content_json`, `role`, `snippet`, and `source`.
   class AlgoliaSearcher
     Result = Struct.new(:id, :session_id, :role, :content_text, :content_json, :snippet, :source, keyword_init: true) do
       def respond_to_missing?(name, include_private = false)
@@ -14,45 +15,52 @@ module Recall
       return [] if query.blank?
       return [] unless Session.algolia_enabled?
 
-      params = { hitsPerPage: limit }
+      # Over-fetch so we have enough unique sessions after session-level dedup.
+      params = { hitsPerPage: limit * 4 }
       params[:filters] = "project_id:#{project_id.to_i}" if project_id
 
-      hits = Session.algolia_search(query, params).to_a
+      hits = Message.algolia_search(query, params).to_a
       return [] if hits.empty?
 
-      session_ids = hits.map(&:id)
-      sessions_by_id = Session.where(id: session_ids).index_by(&:id)
-      first_messages_by_session = Message
-        .where(session_id: session_ids)
-        .where(role: %w[user assistant])
-        .includes(:content)
-        .group_by(&:session_id)
-        .transform_values { |ms| ms.min_by(&:position) }
+      best_hit_per_session = {}
+      hits.each do |hit|
+        best_hit_per_session[hit.session_id] ||= hit
+        break if best_hit_per_session.size >= limit
+      end
 
-      hits.filter_map do |session|
-        first_message = first_messages_by_session[session.id]
-        next unless first_message
+      message_ids = best_hit_per_session.values.map(&:id)
+      messages_by_id = Message.where(id: message_ids).includes(:content).index_by(&:id)
 
-        highlight = extract_highlight(session)
+      best_hit_per_session.values.filter_map do |hit|
+        message = messages_by_id[hit.id]
+        next unless message
 
         Result.new(
-          id: first_message.id,
-          session_id: session.id,
-          role: first_message.role,
-          content_text: first_message.content_text,
-          content_json: first_message.content_json,
-          snippet: highlight,
+          id: message.id,
+          session_id: message.session_id,
+          role: message.role,
+          content_text: message.content_text,
+          content_json: message.content_json,
+          snippet: extract_highlight(hit),
           source: "algolia"
         )
       end
     end
 
-    def self.extract_highlight(session)
-      meta = session.try(:highlight_result)
-      return nil unless meta.is_a?(Hash)
+    def self.extract_highlight(hit)
+      snip = hit.try(:snippet_result)
+      if snip.is_a?(Hash)
+        node = snip[:content_text] || snip["content_text"]
+        if node.is_a?(Hash)
+          value = (node[:value] || node["value"]).to_s
+          return value if value.include?("<mark>")
+        end
+      end
 
-      %i[summary_body first_user_text display_title].each do |attr|
-        node = meta[attr] || meta[attr.to_s]
+      highlight = hit.try(:highlight_result)
+      return nil unless highlight.is_a?(Hash)
+      %i[content_text display_title].each do |attr|
+        node = highlight[attr] || highlight[attr.to_s]
         next unless node.is_a?(Hash)
         value = (node[:value] || node["value"]).to_s
         return value if value.include?("<mark>")

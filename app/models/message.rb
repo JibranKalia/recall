@@ -1,5 +1,6 @@
 class Message < ApplicationRecord
   include Searchable
+  include AlgoliaIndex
 
   belongs_to :session, counter_cache: true
   has_one :content, dependent: :destroy

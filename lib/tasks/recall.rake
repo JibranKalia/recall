@@ -49,25 +49,36 @@ namespace :recall do
     puts "Enqueued #{count} title generation jobs."
   end
 
-  desc "Reindex all sessions into Algolia"
+  desc "Reindex indexable messages (user + real-text assistant) into Algolia"
   task algolia_reindex: :environment do
     unless Session.algolia_enabled?
       abort "Algolia not configured. Set ALGOLIA_WRITE_API_KEY (and optionally ALGOLIA_APP_ID)."
     end
 
     batch_size = (ENV["BATCH_SIZE"] || 500).to_i
-    puts "Reindexing #{Session.count} sessions into Algolia..."
-    Session.algolia_reindex!(batch_size)
+    total = Message.where(role: %w[user assistant]).count
+    puts "Reindexing up to #{total} candidate messages into Algolia (non-indexable rows are filtered server-side)..."
+    Message.algolia_reindex!(batch_size)
     puts "Done."
   end
 
-  desc "Clear the Algolia index for the current Rails env"
+  desc "Clear the Algolia message index for the current Rails env"
   task algolia_clear: :environment do
     unless Session.algolia_enabled?
       abort "Algolia not configured. Set ALGOLIA_WRITE_API_KEY (and optionally ALGOLIA_APP_ID)."
     end
-    Session.algolia_clear_index!
-    puts "Cleared Algolia index."
+    Message.algolia_clear_index!
+    puts "Cleared Algolia message index."
+  end
+
+  desc "Delete the now-unused recall_sessions Algolia index from earlier experiment"
+  task algolia_drop_sessions_index: :environment do
+    unless Session.algolia_enabled?
+      abort "Algolia not configured."
+    end
+    index_name = "recall_sessions_#{Rails.env}"
+    AlgoliaSearch.client.delete_index(index_name)
+    puts "Deleted #{index_name}."
   end
 
   desc "Show import stats"

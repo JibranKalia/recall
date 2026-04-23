@@ -11,40 +11,6 @@ class Session < ApplicationRecord
   after_save :sync_fts, if: -> { saved_change_to_title? || saved_change_to_custom_title? || saved_change_to_external_id? }
   after_destroy :remove_from_fts
 
-  # Algolia indexing — only included when the gem is configured (see
-  # config/initializers/algoliasearch.rb). auto_index/auto_remove are off;
-  # reindexing is batched via the recall:algolia_reindex rake task.
-  if defined?(AlgoliaSearch) && AlgoliaSearch::Configuration.class_variable_defined?(:@@configuration)
-    include AlgoliaSearch
-
-    algoliasearch index_name: "recall_sessions_#{Rails.env}", auto_index: false, auto_remove: false do
-      attribute :display_title
-      attribute :project_id
-      attribute :project_name do
-        project&.display_name
-      end
-      attribute :source_name do
-        source&.source_name
-      end
-      attribute :summary_body do
-        latest_summary&.body.to_s.truncate(2_000)
-      end
-      attribute :first_user_text do
-        messages.where(role: "user").order(:position).limit(1).joins(:content).pick("message_contents.content_text").to_s.truncate(5_000)
-      end
-      attribute :started_at_ts do
-        started_at&.to_i
-      end
-      searchableAttributes ["display_title", "project_name", "summary_body", "first_user_text"]
-      attributesForFaceting ["filterOnly(project_id)"]
-      customRanking ["desc(started_at_ts)"]
-      attributesToSnippet ["summary_body:40", "first_user_text:40"]
-      snippetEllipsisText "..."
-      highlightPreTag "<mark>"
-      highlightPostTag "</mark>"
-    end
-  end
-
   def self.algolia_enabled?
     defined?(AlgoliaSearch) && AlgoliaSearch::Configuration.class_variable_defined?(:@@configuration)
   end
