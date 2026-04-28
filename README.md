@@ -8,7 +8,7 @@ You've had hundreds of conversations with Claude Code and Codex. You *know* you 
 
 ## What Recall does
 
-**Imports** conversations from Claude Code and OpenAI Codex into a single SQLite database. **Indexes** every message with FTS5 full-text search. **Serves** a web UI for browsing and a CLI for quick lookups.
+**Imports** conversations from Claude Code and OpenAI Codex into a single PostgreSQL database. **Indexes** every message with `pg_search` full-text search (with optional Algolia mirror). **Serves** a web UI for browsing and a CLI for quick lookups.
 
 ## Screenshots
 
@@ -26,6 +26,7 @@ Projects index — conversations grouped by the repo/directory they happened in:
 - **Auto-generated titles and summaries** -- sessions get titles via a local LLM (Ollama) so you're not staring at "Untitled session" everywhere
 - **Experiments** -- compare prompts across LLM providers (Ollama, Claude, Codex, OpenCode) side-by-side with cost and speed tracking
 - **Incremental imports** -- checksum-based dedup means you can re-run imports without duplicating anything
+- **Live session view** -- open a session and it auto-reimports every ~30s and tails to the bottom, so an in-progress conversation stays in sync without a manual refresh
 - **Works from anywhere** -- data lives in `~/.config/recall/`, so the CLI works regardless of your current directory
 
 ## Quick start
@@ -78,7 +79,7 @@ different `CLAUDE_CONFIG_DIR`) via `config/recall.local.rb`.
 
 ## Built with
 
-Rails 8.1, Ruby 3.4, SQLite3 + FTS5, Hotwire (Turbo + Stimulus), Solid Queue. No Postgres, no Redis, no external dependencies beyond a Ruby runtime.
+Rails 8.1, Ruby 3.4, PostgreSQL + `pg_search`, Hotwire (Turbo + Stimulus), Solid Queue. No Redis required.
 
 ## License
 

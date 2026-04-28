@@ -37,7 +37,7 @@ bin/recall search "query"              # CLI search
 - **Session**: one conversation, imported from a JSONL file. Unique on `external_id`. Has `title` (auto-generated via Ollama) and `custom_title` (user-set). `display_title` resolves: custom_title → title → "Untitled session".
 - **Message**: single turn in a session. Roles: `user`, `assistant`, `system`, `tool_result`.
 - **Message::Content**: stores `content_text` (plain text for FTS) and `content_json` (structured blocks for rendering). One-to-one with Message. Table name is `message_contents`.
-- **Session::Source**: import provenance — `source_name`, `source_type`, `source_path`, `source_checksum`, `source_size`. One-to-one with Session. Table name is `session_sources`.
+- **Session::Source**: import provenance — `source_name`, `source_type`, `source_path`, `source_checksum`, `source_size`, `last_synced_at` (timestamp of the last importer pass over the file, bumped even when the checksum is unchanged). One-to-one with Session. Table name is `session_sources`.
 - **Session::Summary**: AI-generated summary with `body` and `title`. Table name is `session_summaries`.
 - **Session::Markdown**: non-DB model that renders a session as Markdown. Instantiated via `session.to_markdown`.
 - **TokenUsage**: per-message token breakdown — `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`, `model`. One-to-one with Message. Supports `estimated_cost` via rate card lookup.
