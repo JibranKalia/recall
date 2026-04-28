@@ -29,7 +29,7 @@
         <%= link_to "Experiments", experiments_path, class: "nav-link" %>
       </div>
       <span class="nav-stats" id="nav_stats"><%= Session.count %> sessions &middot; <%= Message.count %> messages</span>
-      <%= render "imports/button", session_id: @session&.id %>
+      <%= render "imports/button", session_id: @session&.id, session_synced_at: @session&.source&.last_synced_at %>
     </nav>
     <main class="container">
       <%= yield %>

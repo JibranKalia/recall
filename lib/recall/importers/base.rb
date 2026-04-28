@@ -49,6 +49,7 @@ module Recall
         if existing && existing.source_size == size
           checksum = Digest::SHA256.file(path).hexdigest
           if existing.source_checksum == checksum
+            existing.source.update_columns(last_synced_at: Time.current)
             @stats[:skipped] += 1
             return
           end
@@ -67,6 +68,7 @@ module Recall
         existing = find_session_by_source_path(path)
         unless force
           if existing&.source_checksum == checksum
+            existing.source.update_columns(last_synced_at: Time.current)
             @stats[:skipped] += 1
             return
           end
@@ -103,7 +105,7 @@ module Recall
         project = find_or_create_project(session_attrs[:cwd])
         source_attrs = session_attrs.slice(:source_name, :source_type, :source_path, :source_checksum, :source_size)
         session = project.sessions.create!(session_attrs.except(:cwd, :source_name, :source_type, :source_path, :source_checksum, :source_size))
-        session.create_source!(source_attrs)
+        session.create_source!(source_attrs.merge(last_synced_at: Time.current))
         insert_messages(session, extract_messages(entries))
         update_session_timestamps(session)
         session
@@ -119,7 +121,8 @@ module Recall
 
         session.source.update!(
           source_checksum: checksum,
-          source_size: size
+          source_size: size,
+          last_synced_at: Time.current
         )
 
         all_messages = extract_messages(entries)

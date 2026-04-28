@@ -1,11 +1,18 @@
 <% if local_assigns[:session_id] %>
+  <% last_sync = local_assigns[:session_synced_at] %>
   <form id="import_btn" action="<%= import_path(session_id: session_id) %>" method="post"
     data-controller="pending-btn auto-session-refresh"
     data-action="submit->pending-btn#submit">
     <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
     <button type="submit" class="nav-refresh nav-refresh--session" data-pending-btn-target="btn" title="Refresh this session">
       <span class="nav-refresh-icon">&#x21bb;</span>
-      <span class="nav-refresh-label">this session</span>
+      <span class="nav-refresh-label">
+        <% if last_sync %>
+          checked <%= time_ago_in_words(last_sync) %> ago
+        <% else %>
+          this session
+        <% end %>
+      </span>
     </button>
   </form>
 <% else %>
