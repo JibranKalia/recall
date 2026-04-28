@@ -1,7 +1,10 @@
 module Recall
   module Importers
     class ClaudeCode < Base
-      SKIP_TYPES = %w[file-history-snapshot last-prompt permission-mode queue-operation].freeze
+      # Non-message entry types. `ai-title` files often appear alone (single
+      # entry, no cwd, no messages) — skipping them prevents 0-message
+      # sessions from being created under a synthetic "unknown" project.
+      SKIP_TYPES = %w[file-history-snapshot last-prompt permission-mode queue-operation ai-title].freeze
 
       def initialize(base_dir:, source_name:)
         super()
