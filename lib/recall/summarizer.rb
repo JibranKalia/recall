@@ -67,6 +67,11 @@ module Recall
       messages = @session.messages.for_summarization
       return [ nil, nil ] if messages.empty?
 
+      if (short_circuit = commit_message_short_circuit(messages))
+        @logger.info "[Summarizer] Session #{@session.id}: detected ai-commit-message session, skipping LLM"
+        return short_circuit
+      end
+
       chunks = chunk_by_chars(messages)
       total_chunks = chunks.size
       @logger.info "[Summarizer] Session #{@session.id}: #{messages.size} messages -> #{total_chunks} chunks"
@@ -156,6 +161,22 @@ module Recall
           p.rules "- Output only bullet points, no preamble"
         end
       end
+    end
+
+    # Sessions produced by ~/work/angi-scripts/bin/ai-commit-message are
+    # single-shot: one user prompt asking for a commit message, one assistant
+    # reply that IS the commit message. Letting the LLM title these produces
+    # titles that are just the commit subject, indistinguishable from a real
+    # conversation. Short-circuit with a "Commit: <subject>" title instead.
+    def commit_message_short_circuit(messages)
+      first_user = messages.find { |m| m.role == "user" }
+      return nil unless first_user&.content_text.to_s.lstrip.start_with?("Write a git commit message. Rules:")
+
+      assistant = messages.find { |m| m.role == "assistant" }&.content_text.to_s.strip
+      return nil if assistant.blank?
+
+      subject = assistant.lines.first.to_s.strip
+      [ assistant, "Commit: #{subject}".truncate(200) ]
     end
 
     def parse_summary_and_title(response)
