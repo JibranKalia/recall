@@ -1,6 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
+  static values = { direction: String }
+
   connect() {
     this.handleScroll = this.toggleVisibility.bind(this)
     window.addEventListener("scroll", this.handleScroll, { passive: true })
@@ -12,11 +14,14 @@ export default class extends Controller {
   }
 
   toggleVisibility() {
-    const nearBottom = (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 200)
-    this.element.classList.toggle("hidden", nearBottom)
+    const hide = this.directionValue === "top"
+      ? window.scrollY <= 200
+      : (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 200)
+    this.element.classList.toggle("hidden", hide)
   }
 
   scroll() {
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+    const top = this.directionValue === "top" ? 0 : document.body.scrollHeight
+    window.scrollTo({ top, behavior: "smooth" })
   }
 }

@@ -13,6 +13,8 @@ class ImportsController < ApplicationController
         Recall::Importer.reimport_session(session)
         Turbo::StreamsChannel.broadcast_action_to(session, action: :refresh)
       end
+      head :ok
+      return
     end
 
     unless ImportRun.any_running?

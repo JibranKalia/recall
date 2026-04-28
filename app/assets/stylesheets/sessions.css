@@ -452,12 +452,10 @@
   }
 }
 
-/* ── Jump to bottom ── */
-.jump-bottom-btn {
+/* ── Jump scroll helpers ── */
+.jump-btn {
   position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 2rem;
   width: 44px;
   height: 44px;
   border-radius: 99px;
@@ -477,15 +475,18 @@
   &:hover {
     color: var(--accent);
     box-shadow: 0 6px 20px rgba(0,0,0,0.16), 0 0 0 1px var(--accent);
-    transform: translateX(-50%) translateY(-2px);
+    transform: translateY(-2px);
   }
 
   &.hidden {
     opacity: 0;
     pointer-events: none;
-    transform: translateX(-50%) translateY(8px);
+    transform: translateY(8px);
   }
 }
+
+.jump-btn--bottom { bottom: 2rem; }
+.jump-btn--top { bottom: 5rem; }
 
 /* ── Empty state ── */
 .empty-state {

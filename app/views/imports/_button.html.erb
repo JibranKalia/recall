@@ -1,15 +1,26 @@
-<% last_import = ImportRun.last_completed_at %>
-<% action_url = local_assigns[:session_id] ? import_path(session_id: session_id) : import_path %>
-<form id="import_btn" action="<%= action_url %>" method="post"
-  data-controller="pending-btn auto-import"
-  data-action="submit->pending-btn#submit"
-  data-auto-import-last-import-at-value="<%= last_import&.iso8601 %>"
-  data-auto-import-url-value="<%= import_path %>">
-  <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-  <button type="submit" class="nav-refresh" data-pending-btn-target="btn" title="Import conversations">
-    <span class="nav-refresh-icon">&#x21bb;</span>
-    <% if last_import %>
-      <span class="nav-refresh-time"><%= time_ago_in_words(last_import) %> ago</span>
-    <% end %>
-  </button>
-</form>
+<% if local_assigns[:session_id] %>
+  <form id="import_btn" action="<%= import_path(session_id: session_id) %>" method="post"
+    data-controller="pending-btn auto-session-refresh"
+    data-action="submit->pending-btn#submit">
+    <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+    <button type="submit" class="nav-refresh nav-refresh--session" data-pending-btn-target="btn" title="Refresh this session">
+      <span class="nav-refresh-icon">&#x21bb;</span>
+      <span class="nav-refresh-label">this session</span>
+    </button>
+  </form>
+<% else %>
+  <% last_import = ImportRun.last_completed_at %>
+  <form id="import_btn" action="<%= import_path %>" method="post"
+    data-controller="pending-btn auto-import"
+    data-action="submit->pending-btn#submit"
+    data-auto-import-last-import-at-value="<%= last_import&.iso8601 %>"
+    data-auto-import-url-value="<%= import_path %>">
+    <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+    <button type="submit" class="nav-refresh" data-pending-btn-target="btn" title="Import conversations">
+      <span class="nav-refresh-icon">&#x21bb;</span>
+      <% if last_import %>
+        <span class="nav-refresh-time"><%= time_ago_in_words(last_import) %> ago</span>
+      <% end %>
+    </button>
+  </form>
+<% end %>

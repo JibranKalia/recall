@@ -69,7 +69,7 @@
   </div>
 </div>
 
-<div class="message-list" data-controller="code-copy">
+<div class="message-list" data-controller="code-copy scroll-init-bottom">
   <% @messages.each do |message| %>
     <% if message.hidden? %>
       <div id="msg-<%= message.id %>" class="message message-hidden">
@@ -124,6 +124,17 @@
   <% end %>
 </div>
 
-<button class="jump-bottom-btn" data-controller="scroll-bottom" data-action="click->scroll-bottom#scroll" title="Jump to bottom">
+<button class="jump-btn jump-btn--top"
+  data-controller="scroll-helper"
+  data-scroll-helper-direction-value="top"
+  data-action="click->scroll-helper#scroll"
+  title="Jump to top">
+  &#8593;
+</button>
+<button class="jump-btn jump-btn--bottom"
+  data-controller="scroll-helper"
+  data-scroll-helper-direction-value="bottom"
+  data-action="click->scroll-helper#scroll"
+  title="Jump to bottom">
   &#8595;
 </button>
