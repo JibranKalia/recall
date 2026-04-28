@@ -1,4 +1,6 @@
 class Session < ApplicationRecord
+  include PgSearch::Model
+
   belongs_to :project, counter_cache: true
   has_many :messages, dependent: :destroy
   has_many :token_usages, through: :messages
@@ -8,8 +10,15 @@ class Session < ApplicationRecord
 
   validates :external_id, presence: true, uniqueness: true
 
-  after_save :sync_fts, if: -> { saved_change_to_title? || saved_change_to_custom_title? || saved_change_to_external_id? }
-  after_destroy :remove_from_fts
+  pg_search_scope :search_metadata,
+    against: [:title, :custom_title, :external_id],
+    associated_against: { summaries: [:body, :title] },
+    using: {
+      tsearch: {
+        dictionary: "english",
+        tsvector_column: "tsv"
+      }
+    }
 
   def self.algolia_enabled?
     defined?(AlgoliaSearch) && AlgoliaSearch::Configuration.class_variable_defined?(:@@configuration)
@@ -54,27 +63,5 @@ class Session < ApplicationRecord
 
   def to_markdown(**options)
     Session::Markdown.new(self).render(**options)
-  end
-
-  private
-
-  def sync_fts
-    conn = self.class.connection
-    unless previously_new_record?
-      conn.execute(sanitize_sql(["INSERT INTO sessions_fts(sessions_fts, rowid, title, custom_title, summary, external_id) VALUES ('delete', ?, ?, ?, ?, ?)",
-        id, title_before_last_save, custom_title_before_last_save, nil, external_id_before_last_save]))
-    end
-    conn.execute(sanitize_sql(["INSERT INTO sessions_fts(rowid, title, custom_title, summary, external_id) VALUES (?, ?, ?, ?, ?)",
-      id, title, custom_title, latest_summary&.body, external_id]))
-  end
-
-  def remove_from_fts
-    self.class.connection.execute(sanitize_sql(
-      ["INSERT INTO sessions_fts(sessions_fts, rowid, title, custom_title, summary, external_id) VALUES ('delete', ?, ?, ?, ?, ?)",
-        id, title, custom_title, latest_summary&.body, external_id]))
-  end
-
-  def sanitize_sql(args)
-    self.class.sanitize_sql_array(args)
   end
 end

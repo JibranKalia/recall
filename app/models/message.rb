@@ -12,6 +12,17 @@ class Message < ApplicationRecord
   scope :ordered, -> { order(:position) }
   scope :for_summarization, -> { includes(:content).where.not(role: "tool_result").ordered }
 
+  attr_accessor :search_source
+
+  # `with_pg_search_highlight` adds a `pg_search_highlight` AR attribute on
+  # content-search hits. Session-level hits don't have one. Callers (views,
+  # CLI) ask for `snippet`; bridge both cases here.
+  def snippet
+    return @snippet if defined?(@snippet)
+    return attributes["pg_search_highlight"] if has_attribute?("pg_search_highlight")
+    nil
+  end
+
   def tool_only?
     return false unless role == "assistant"
     content_text.to_s.strip.match?(/\A\[Tool: .+\]\z/)

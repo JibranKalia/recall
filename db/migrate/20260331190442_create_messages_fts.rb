@@ -1,5 +1,7 @@
 class CreateMessagesFts < ActiveRecord::Migration[8.1]
   def up
+    return unless connection.adapter_name == "SQLite"
+
     execute <<~SQL
       CREATE VIRTUAL TABLE messages_fts USING fts5(
         content_text,
@@ -28,6 +30,8 @@ class CreateMessagesFts < ActiveRecord::Migration[8.1]
   end
 
   def down
+    return unless connection.adapter_name == "SQLite"
+
     execute "DROP TRIGGER IF EXISTS messages_au"
     execute "DROP TRIGGER IF EXISTS messages_ad"
     execute "DROP TRIGGER IF EXISTS messages_ai"

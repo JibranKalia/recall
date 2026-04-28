@@ -16,7 +16,7 @@
 
     <div class="session-meta">
       <span class="session-meta-tag session-meta-tag--source"><%= @session.source_name %></span>
-      <span class="session-meta-tag"><%= @session.started_at&.strftime("%b %d, %Y &middot; %H:%M").html_safe %></span>
+      <span class="session-meta-tag"><%= @session.started_at&.strftime("%b %d, %Y &middot; %H:%M")&.html_safe %></span>
       <% if @session.model.present? %>
         <span class="session-meta-tag session-meta-tag--model"><%= @session.model %></span>
       <% end %>

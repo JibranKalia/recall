@@ -66,41 +66,16 @@ module Recall
     end
 
     # Incremental sync of every search backend for the given changed sessions.
-    # Keep FTS5 and Algolia in lockstep — every caller that writes to one
-    # should write to both; calling this instead of the per-backend syncs
-    # makes drift impossible.
+    # Postgres tsvector columns are GENERATED, so they self-maintain on
+    # insert/update — only Algolia needs an explicit push.
     def self.sync_search_backends(session_ids)
-      sync_fts(session_ids)
       sync_algolia(session_ids)
     end
 
     # Full rebuild of every search backend. Used by `reimport_all` when
     # checksums are bypassed and the full corpus has been re-written.
     def self.rebuild_search_backends
-      rebuild_fts
       rebuild_algolia
-    end
-
-    def self.sync_fts(session_ids)
-      if session_ids.empty?
-        puts "  No sessions to index."
-        return
-      end
-
-      conn = ActiveRecord::Base.connection
-      print "  Indexing #{session_ids.size} changed sessions..."
-      session_ids.each_slice(100) do |ids|
-        placeholders = ids.map { "?" }.join(",")
-        # Delete old entries for these sessions
-        conn.execute(ActiveRecord::Base.sanitize_sql_array([
-          "INSERT INTO messages_fts(messages_fts, rowid, content_text) SELECT 'delete', mc.message_id, mc.content_text FROM message_contents mc JOIN messages m ON m.id = mc.message_id WHERE m.session_id IN (#{placeholders})", *ids
-        ]))
-        # Re-insert current entries
-        conn.execute(ActiveRecord::Base.sanitize_sql_array([
-          "INSERT INTO messages_fts(rowid, content_text) SELECT mc.message_id, mc.content_text FROM message_contents mc JOIN messages m ON m.id = mc.message_id WHERE m.session_id IN (#{placeholders})", *ids
-        ]))
-      end
-      puts " done."
     end
 
     # Incremental Algolia sync — only indexes messages whose session was
@@ -123,15 +98,6 @@ module Recall
       indexable.each_slice(500) do |batch|
         Message.algolia_index_objects(batch)
       end
-      puts " done."
-    end
-
-    def self.rebuild_fts
-      print "  Rebuilding message search index..."
-      ActiveRecord::Base.connection.execute("INSERT INTO messages_fts(messages_fts) VALUES('rebuild')")
-      puts " done."
-      print "  Rebuilding session search index..."
-      ActiveRecord::Base.connection.execute("INSERT INTO sessions_fts(sessions_fts) VALUES('rebuild')")
       puts " done."
     end
 

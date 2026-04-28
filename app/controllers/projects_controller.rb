@@ -2,7 +2,7 @@ class ProjectsController < ApplicationController
   def index
     @projects = Project
       .joins(sessions: :source)
-      .select("projects.*, MAX(sessions.ended_at) AS latest_session_at, GROUP_CONCAT(DISTINCT session_sources.source_type) AS source_types_csv")
+      .select("projects.*, MAX(sessions.ended_at) AS latest_session_at, STRING_AGG(DISTINCT session_sources.source_type, ',') AS source_types_csv")
       .group("projects.id")
       .order("latest_session_at DESC")
 

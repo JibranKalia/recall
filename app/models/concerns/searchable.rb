@@ -2,112 +2,70 @@ module Searchable
   extend ActiveSupport::Concern
 
   class_methods do
+    # Returns Message records ordered as session-title hits first, then
+    # content hits. Session hits are surfaced as the first message of the
+    # matched session (mirrors the legacy FTS5 layout consumed by views and
+    # the CLI). Content hits expose the ts_headline excerpt via
+    # `Message#snippet`.
     def search(query, limit: 50, project_id: nil)
       return [] if query.blank?
 
-      match = build_match(query)
-
-      # Session title/summary matches are highest quality — surface them first
-      session_results = search_sessions(match, limit: limit, project_id: project_id, exclude_session_ids: [])
-
-      # Message content matches, skipping sessions already found above
+      session_results = search_by_session_metadata(query, limit: limit, project_id: project_id)
       matched_session_ids = session_results.map(&:session_id).uniq
-      message_results = search_messages(match, limit: limit, project_id: project_id, exclude_session_ids: matched_session_ids)
 
-      (session_results + message_results).first(limit)
+      content_results = search_by_message_content(query, limit: limit,
+        project_id: project_id, exclude_session_ids: matched_session_ids)
+
+      (session_results + content_results).first(limit)
     end
 
     private
 
-    # AND of individual stemmed tokens for multi-word queries.
-    # Matches documents containing all terms anywhere (vs exact phrase), improving
-    # recall for queries like "enrichment data modeling" matching "data model enrichment".
-    def build_match(query)
-      tokens = query.split.map { |t| t.gsub('"', '""') }.reject(&:blank?)
-      return '""' if tokens.empty?
-      tokens.map { |t| "\"#{t}\"" }.join(" ")
+    # Match on session title/custom_title/external_id (indexed via the
+    # generated tsvector column) plus associated session_summaries. Returns
+    # the first message of each matched session as the carrier record.
+    def search_by_session_metadata(query, limit:, project_id: nil)
+      sessions = Session.search_metadata(query)
+      sessions = sessions.where(project_id: project_id) if project_id
+
+      session_ids = sessions.limit(limit).pluck(:id)
+      return [] if session_ids.empty?
+
+      Message
+        .includes(:content)
+        .where(session_id: session_ids, position: 1)
+        .each { |m| m.search_source = "session" }
     end
 
-    # Excludes tool_result and system messages — they're file listings / command
-    # output that match on incidental term occurrences, not meaningful content.
-    def search_messages(match, limit:, project_id: nil, exclude_session_ids: [])
-      exclude_clause = if exclude_session_ids.any?
-        "AND messages.session_id NOT IN (#{exclude_session_ids.map(&:to_i).join(',')})"
-      else
-        ""
-      end
+    # Search the message_contents tsvector column (where pg_search_scope
+    # lives), filter by Message-side criteria via a subquery, then map back
+    # to Message records — preserving pg_search's rank ordering and copying
+    # the ts_headline snippet onto each Message.
+    def search_by_message_content(query, limit:, project_id: nil, exclude_session_ids: [])
+      message_scope = Message.where.not(role: %w[tool_result system])
+      message_scope = message_scope.where.not(session_id: exclude_session_ids) if exclude_session_ids.any?
+      message_scope = message_scope.joins(:session).where(sessions: { project_id: project_id }) if project_id
 
-      if project_id
-        sql = <<~SQL
-          SELECT messages.*, mc.content_text, mc.content_json,
-                 snippet(messages_fts, 0, '<mark>', '</mark>', '...', 48) as snippet,
-                 'message' as source
-          FROM messages
-          JOIN message_contents mc ON mc.message_id = messages.id
-          JOIN messages_fts ON messages.id = messages_fts.rowid
-          JOIN sessions ON sessions.id = messages.session_id
-          WHERE messages_fts MATCH ?
-            AND sessions.project_id = ?
-            AND messages.role NOT IN ('tool_result', 'system')
-            #{exclude_clause}
-          ORDER BY messages_fts.rank
-          LIMIT ?
-        SQL
-        find_by_sql([sql, match, project_id, limit])
-      else
-        sql = <<~SQL
-          SELECT messages.*, mc.content_text, mc.content_json,
-                 snippet(messages_fts, 0, '<mark>', '</mark>', '...', 48) as snippet,
-                 'message' as source
-          FROM messages
-          JOIN message_contents mc ON mc.message_id = messages.id
-          JOIN messages_fts ON messages.id = messages_fts.rowid
-          WHERE messages_fts MATCH ?
-            AND messages.role NOT IN ('tool_result', 'system')
-            #{exclude_clause}
-          ORDER BY messages_fts.rank
-          LIMIT ?
-        SQL
-        find_by_sql([sql, match, limit])
-      end
-    end
+      contents = Message::Content
+        .search_full_text(query)
+        .with_pg_search_highlight
+        .where(message_id: message_scope.select(:id))
+        .limit(limit)
+        .to_a
 
-    def search_sessions(match, limit:, project_id: nil, exclude_session_ids: [])
-      exclude_clause = if exclude_session_ids.any?
-        "AND sessions.id NOT IN (#{exclude_session_ids.map(&:to_i).join(',')})"
-      else
-        ""
-      end
+      return [] if contents.empty?
 
-      if project_id
-        sql = <<~SQL
-          SELECT messages.*, mc.content_text, mc.content_json,
-                 NULL as snippet, 'session' as source
-          FROM sessions_fts
-          JOIN sessions ON sessions.id = sessions_fts.rowid
-          JOIN messages ON messages.session_id = sessions.id AND messages.position = 1
-          JOIN message_contents mc ON mc.message_id = messages.id
-          WHERE sessions_fts MATCH ?
-            AND sessions.project_id = ?
-            #{exclude_clause}
-          ORDER BY sessions_fts.rank
-          LIMIT ?
-        SQL
-        find_by_sql([sql, match, project_id, limit])
-      else
-        sql = <<~SQL
-          SELECT messages.*, mc.content_text, mc.content_json,
-                 NULL as snippet, 'session' as source
-          FROM sessions_fts
-          JOIN sessions ON sessions.id = sessions_fts.rowid
-          JOIN messages ON messages.session_id = sessions.id AND messages.position = 1
-          JOIN message_contents mc ON mc.message_id = messages.id
-          WHERE sessions_fts MATCH ?
-            #{exclude_clause}
-          ORDER BY sessions_fts.rank
-          LIMIT ?
-        SQL
-        find_by_sql([sql, match, limit])
+      messages = Message
+        .where(id: contents.map(&:message_id))
+        .includes(:content, :session)
+        .index_by(&:id)
+
+      contents.filter_map do |c|
+        msg = messages[c.message_id]
+        next unless msg
+        msg.instance_variable_set(:@snippet, c.pg_search_highlight)
+        msg.search_source = "message"
+        msg
       end
     end
   end

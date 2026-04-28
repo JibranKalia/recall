@@ -1,11 +1,15 @@
 class DropMessageContentsFtsInsertTrigger < ActiveRecord::Migration[8.1]
   def up
+    return unless connection.adapter_name == "SQLite"
+
     execute "DROP TRIGGER IF EXISTS message_contents_ai"
     execute "DROP TRIGGER IF EXISTS message_contents_au"
     execute "DROP TRIGGER IF EXISTS message_contents_ad"
   end
 
   def down
+    return unless connection.adapter_name == "SQLite"
+
     execute <<~SQL
       CREATE TRIGGER message_contents_ai AFTER INSERT ON message_contents BEGIN
         INSERT INTO messages_fts(rowid, content_text)

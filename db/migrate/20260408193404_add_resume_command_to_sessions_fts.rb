@@ -1,5 +1,7 @@
 class AddResumeCommandToSessionsFts < ActiveRecord::Migration[8.1]
   def up
+    return unless connection.adapter_name == "SQLite"
+
     execute "DROP TABLE IF EXISTS sessions_fts"
     execute <<~SQL
       CREATE VIRTUAL TABLE sessions_fts USING fts5(
@@ -16,6 +18,8 @@ class AddResumeCommandToSessionsFts < ActiveRecord::Migration[8.1]
   end
 
   def down
+    return unless connection.adapter_name == "SQLite"
+
     execute "DROP TABLE IF EXISTS sessions_fts"
     execute <<~SQL
       CREATE VIRTUAL TABLE sessions_fts USING fts5(

@@ -1,36 +1,36 @@
-# SQLite. Versions 3.8.0 and up are supported.
-#   gem install sqlite3
+# PostgreSQL. Versions 12 and up are supported.
 #
-#   Ensure the SQLite 3 gem is defined in your Gemfile
-#   gem "sqlite3"
+# Local Homebrew Postgres 17 listens on port 6543; override per-machine via
+# the RECALL_PG_* env vars below if your setup differs.
 #
-# Development databases live in ~/.config/recall/ so the CLI can find them
-# regardless of working directory. Override with RECALL_DATA_DIR if needed.
-#
-<% data_dir = ENV.fetch("RECALL_DATA_DIR") { File.join(Dir.home, ".config", "recall") } %>
-
 default: &default
-  adapter: sqlite3
-  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 10 } %>
-  timeout: 5000
-  pragmas:
-    busy_timeout: 15000
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 10 } %>
+  host: <%= ENV.fetch("RECALL_PG_HOST") { "localhost" } %>
+  port: <%= ENV.fetch("RECALL_PG_PORT") { 6543 } %>
+  username: <%= ENV.fetch("RECALL_PG_USER") { ENV["USER"] } %>
+  password: <%= ENV["RECALL_PG_PASSWORD"] %>
+  # libpq's GSSAPI/Kerberos init crashes on the child side of fork() on
+  # macOS (Apple's GSS framework uses XPC, which is not fork-safe). Solid
+  # Queue forks workers, so disable GSS encryption negotiation entirely.
+  gssencmode: disable
 
 development:
   primary:
     <<: *default
-    database: <%= File.join(data_dir, "development.sqlite3") %>
+    database: recall_development
   cache:
     <<: *default
-    database: <%= File.join(data_dir, "development_cache.sqlite3") %>
+    database: recall_development_cache
     migrations_paths: db/cache_migrate
   queue:
     <<: *default
-    database: <%= File.join(data_dir, "development_queue.sqlite3") %>
+    database: recall_development_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *default
-    database: <%= File.join(data_dir, "development_cable.sqlite3") %>
+    database: recall_development_cable
     migrations_paths: db/cable_migrate
 
 # Warning: The database defined as "test" will be erased and
@@ -38,23 +38,29 @@ development:
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: storage/test.sqlite3
+  database: recall_test
 
-# Store production database in the storage/ directory, which by default
-# is mounted as a persistent Docker volume in config/deploy.yml.
 production:
   primary:
     <<: *default
-    database: storage/production.sqlite3
+    database: recall_production
+    username: recall
+    password: <%= ENV["RECALL_DATABASE_PASSWORD"] %>
   cache:
     <<: *default
-    database: storage/production_cache.sqlite3
+    database: recall_production_cache
+    username: recall
+    password: <%= ENV["RECALL_DATABASE_PASSWORD"] %>
     migrations_paths: db/cache_migrate
   queue:
     <<: *default
-    database: storage/production_queue.sqlite3
+    database: recall_production_queue
+    username: recall
+    password: <%= ENV["RECALL_DATABASE_PASSWORD"] %>
     migrations_paths: db/queue_migrate
   cable:
     <<: *default
-    database: storage/production_cable.sqlite3
+    database: recall_production_cable
+    username: recall
+    password: <%= ENV["RECALL_DATABASE_PASSWORD"] %>
     migrations_paths: db/cable_migrate
