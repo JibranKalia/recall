@@ -11,21 +11,13 @@ class LLM::Providers::ClaudeCode < LLM::Provider
     "claude_code"
   end
 
-  def work_dir?
-    prefix = Recall::Config.claude_code_work_dir_prefix_expanded
-    config_dir = Recall::Config.claude_code_work_config_dir_expanded
-    return false unless prefix && config_dir
-    Dir.pwd.start_with?(prefix)
-  end
-
   def complete(prompt, system: nil, **)
     start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
     full_prompt = system ? "#{system}\n\n#{prompt}" : prompt
 
-    cmd = [ "claude", "-p", "--model", @model, "--output-format", "json", "--no-session-persistence" ]
-    env = work_dir? ? { "CLAUDE_CONFIG_DIR" => Recall::Config.claude_code_work_config_dir_expanded } : {}
-    stdout, stderr, status = Open3.capture3(env, *cmd, stdin_data: full_prompt)
+    cmd = [ Recall::Config.claude_code_command, "-p", "--model", @model, "--output-format", "json", "--no-session-persistence" ]
+    stdout, stderr, status = Open3.capture3(*cmd, stdin_data: full_prompt)
 
     duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round
 

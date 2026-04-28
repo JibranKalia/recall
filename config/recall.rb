@@ -52,15 +52,6 @@ Recall.configure do |c|
   # c.domain "side", matching: %r{/side/}
   # c.default_domain = "personal"
 
-  # --- Claude Code profile switch ------------------------------------------
-
-  # When the Rails server's working directory starts with `prefix`, the
-  # ClaudeCode LLM provider sets CLAUDE_CONFIG_DIR to `config_dir` before
-  # shelling out to `claude`. Handy if you keep a separate Claude config
-  # for work. Leave commented to disable.
-  #
-  # c.claude_code_work_profile prefix: "~/work", config_dir: "~/.claude-work"
-
   # --- LLM providers -------------------------------------------------------
 
   # Ollama powers auto-summarization and title generation. Pull the model
@@ -73,6 +64,11 @@ Recall.configure do |c|
   # c.claude_code_default_model = "claude-sonnet-4-20250514"
   # c.opencode_default_model    = "kimi-k2.5"
   # c.codex_default_model       = "codex"
+
+  # Binary the ClaudeCode provider shells out to for experiments. Override
+  # if you wrap `claude` in a script (e.g. one that picks CLAUDE_CONFIG_DIR
+  # based on the current directory).
+  # c.claude_code_command = "claude"
 
   # --- Data directory ------------------------------------------------------
 

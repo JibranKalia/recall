@@ -8,7 +8,7 @@ module Recall
                     :domain_rules, :default_domain,
                     :ollama_host, :ollama_default_model,
                     :claude_code_default_model, :opencode_default_model, :codex_default_model,
-                    :claude_code_work_dir_prefix, :claude_code_work_config_dir,
+                    :claude_code_command,
                     :data_dir
 
       def configure
@@ -26,8 +26,7 @@ module Recall
         @claude_code_default_model   = "claude-sonnet-4-20250514"
         @opencode_default_model      = "kimi-k2.5"
         @codex_default_model         = "codex"
-        @claude_code_work_dir_prefix = nil
-        @claude_code_work_config_dir = nil
+        @claude_code_command         = "claude"
         @data_dir                    = ENV["RECALL_DATA_DIR"] || File.join(Dir.home, ".config", "recall")
       end
 
@@ -39,14 +38,6 @@ module Recall
         return default_domain if path.blank?
         rule = Array(domain_rules).find { |r| path.to_s.match?(r[:match]) }
         rule ? rule[:domain] : default_domain
-      end
-
-      def claude_code_work_dir_prefix_expanded
-        claude_code_work_dir_prefix && File.expand_path(claude_code_work_dir_prefix)
-      end
-
-      def claude_code_work_config_dir_expanded
-        claude_code_work_config_dir && File.expand_path(claude_code_work_config_dir)
       end
     end
 
@@ -72,11 +63,6 @@ module Recall
 
       def domain(name, matching:)
         @target.domain_rules << { match: matching, domain: name }
-      end
-
-      def claude_code_work_profile(prefix:, config_dir:)
-        @target.claude_code_work_dir_prefix = prefix
-        @target.claude_code_work_config_dir = config_dir
       end
 
       def respond_to_missing?(name, include_private = false)
