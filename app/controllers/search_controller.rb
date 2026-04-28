@@ -1,14 +1,15 @@
 class SearchController < ApplicationController
-  BACKENDS = %w[fts algolia].freeze
+  BACKENDS = %w[local algolia].freeze
 
   def index
     @query = params[:q].to_s.strip
     @algolia_available = Session.algolia_enabled?
-    # Default to Algolia in the UI when it's configured; fall back to FTS5
-    # otherwise (and when the user explicitly picks an invalid backend).
-    @backend = params[:backend].presence || (@algolia_available ? "algolia" : "fts")
-    @backend = "fts" unless BACKENDS.include?(@backend)
-    @backend = "fts" if @backend == "algolia" && !@algolia_available
+    # Default to Algolia in the UI when it's configured; fall back to the
+    # local Postgres tsvector backend otherwise (and when the user explicitly
+    # picks an invalid backend).
+    @backend = params[:backend].presence || (@algolia_available ? "algolia" : "local")
+    @backend = "local" unless BACKENDS.include?(@backend)
+    @backend = "local" if @backend == "algolia" && !@algolia_available
 
     if @query.present?
       @results = run_search(@query, @backend)

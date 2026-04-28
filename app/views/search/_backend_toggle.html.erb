@@ -1,4 +1,4 @@
-<%# Toggle between FTS5 and Algolia search backends.
+<%# Toggle between local Postgres tsvector search and Algolia.
     Locals: backend (current), algolia_available (bool). %>
 <div class="search-backend-toggle" role="radiogroup" aria-label="Search backend">
   <% SearchController::BACKENDS.each do |b| %>
@@ -9,7 +9,7 @@
              <%= 'disabled' if disabled %>
              data-search-target="backend"
              data-action="change->search#search">
-      <%= b == "fts" ? "FTS5" : "Algolia" %>
+      <%= b == "local" ? "Local" : "Algolia" %>
       <% if disabled %><span class="search-backend-hint">(set ALGOLIA_WRITE_API_KEY)</span><% end %>
     </label>
   <% end %>

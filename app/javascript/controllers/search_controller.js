@@ -40,6 +40,6 @@ export default class extends Controller {
 
   selectedBackend() {
     const checked = this.backendTargets.find(el => el.checked && !el.disabled)
-    return checked ? checked.value : "fts"
+    return checked ? checked.value : "local"
   }
 }
